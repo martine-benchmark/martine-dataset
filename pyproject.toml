@@ -1,0 +1,45 @@
+[project]
+name = "martine-converters"
+version = "1.0.0"
+description = "Martine dataset: convert the published data to the inputs of 3D reconstruction methods"
+readme = "converters/README.md"
+license = "MIT"
+license-files = ["LICENSE-CODE"]
+authors = [{ name = "Baptiste Brument and the Martine authors" }]
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.20",
+    "opencv-python-headless>=4.5,<5",  # OpenCV 5 dropped the EXR writer used for the float images
+]
+
+[project.optional-dependencies]
+exr = ["OpenEXR>=3.3"]      # faster EXR reading/writing (OpenEXR.File API)
+tri = ["pycolmap>=3.12"]    # triangulation without a COLMAP executable (--tri-backend pycolmap)
+subsets = ["scikit-learn>=1.2", "scipy>=1.8"]  # --n-views and `martine-convert subsets` (k-means, pairing)
+
+[project.scripts]
+martine-convert = "martine_converters.cli:main"
+
+[project.urls]
+Homepage = "https://martine-benchmark.github.io/"
+Repository = "https://github.com/martine-benchmark/martine-dataset"
+
+[dependency-groups]
+dev = ["pytest>=7", "ruff>=0.6", "scipy>=1.8", "scikit-learn>=1.2"]  # scipy: GT distances in the data tests
+
+[build-system]
+requires = ["hatchling>=1.26"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["converters/martine_converters"]
+
+[tool.pytest.ini_options]
+testpaths = ["converters/tests", "scripts/tests"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]
