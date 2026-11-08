@@ -1,0 +1,58 @@
+cff-version: 1.2.0
+message: "If you use this repository, please cite the Martine paper (preferred citation below)."
+title: "Martine dataset: multi-view 3D surface reconstruction benchmark"
+type: dataset
+url: "https://martine-benchmark.github.io/"
+license: CC-BY-4.0
+identifiers:
+  - type: doi
+    value: "10.7910/DVN/2BEPEH"
+    description: "Martine dataset on Harvard Dataverse"
+repository-code: "https://github.com/martine-benchmark/martine-dataset"
+authors: &authors
+  - family-names: Bruneau
+    given-names: Robin
+    orcid: "https://orcid.org/0000-0003-3178-9019"
+    affiliation: "Department of Quantitative Biomedicine, University of Zurich"
+  - family-names: Brument
+    given-names: Baptiste
+    orcid: "https://orcid.org/0009-0004-5372-2215"
+    affiliation: "IRIT, University of Toulouse"
+  - family-names: Giraud
+    given-names: Frederic
+    orcid: "https://orcid.org/0000-0003-1490-7466"
+    affiliation: "ROCS, Balgrist University Hospital"
+  - family-names: Sigrist
+    given-names: Bastian
+    orcid: "https://orcid.org/0000-0002-7720-1420"
+    affiliation: "ROCS, Balgrist University Hospital"
+  - family-names: Jecklin
+    given-names: Sascha
+    orcid: "https://orcid.org/0000-0001-6529-487X"
+    affiliation: "Independent Researcher"
+  - family-names: Fürnstahl
+    given-names: Philipp
+    orcid: "https://orcid.org/0000-0001-6484-6206"
+    affiliation: "ROCS, Balgrist University Hospital"
+  - family-names: Menze
+    given-names: Bjoern
+    orcid: "https://orcid.org/0000-0003-4136-5690"
+    affiliation: "Department of Quantitative Biomedicine, University of Zurich"
+  - family-names: Calvet
+    given-names: Lilian
+    orcid: "https://orcid.org/0000-0002-2565-2297"
+    affiliation: "ROCS, Balgrist University Hospital"
+keywords:
+  - 3D reconstruction
+  - multi-view stereo
+  - photometric stereo
+  - benchmark
+preferred-citation:
+  type: conference-paper
+  title: "Martine: Benchmarking Multi-View 3D Surface Reconstruction Across Viewpoint Coverage, Resolution, and Lighting"
+  authors: *authors
+  collection-title: "Advances in Neural Information Processing Systems (NeurIPS), Evaluations & Datasets Track"
+  conference:
+    name: "NeurIPS 2026"
+  year: 2026
+  url: "https://martine-benchmark.github.io/"
