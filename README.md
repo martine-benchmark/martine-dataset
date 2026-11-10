@@ -5,6 +5,7 @@
 [![Data License: CC BY 4.0](https://img.shields.io/badge/Data%20License-CC%20BY%204.0-blue.svg)](LICENSE)
 [![Code License: MIT](https://img.shields.io/badge/Code%20License-MIT-yellow.svg)](LICENSE-CODE)
 [![Paper](https://img.shields.io/badge/NeurIPS%202026-Paper-red.svg)](https://martine-benchmark.github.io/)
+[![arXiv](https://img.shields.io/badge/arXiv-2611.11602-b31b1b.svg)](https://arxiv.org/abs/2611.11602)
 [![Dataset DOI](https://img.shields.io/badge/DOI-10.7910%2FDVN%2F2BEPEH-blue.svg)](https://doi.org/10.7910/DVN/2BEPEH)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 [![tests](https://github.com/martine-benchmark/martine-dataset/actions/workflows/tests.yml/badge.svg)](https://github.com/martine-benchmark/martine-dataset/actions/workflows/tests.yml)
