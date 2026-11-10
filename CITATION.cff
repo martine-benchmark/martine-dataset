@@ -41,7 +41,7 @@ authors: &authors
   - family-names: Calvet
     given-names: Lilian
     orcid: "https://orcid.org/0000-0002-2565-2297"
-    affiliation: "ROCS, Balgrist University Hospital"
+    affiliation: "ROCS, University of Zurich"
 keywords:
   - 3D reconstruction
   - multi-view stereo
