@@ -1,9 +1,8 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2026 Baptiste Brument and the Martine authors
 """Evaluation camera set of a view subset (martine-convert subsets ... --write-eval-sfm DIR): the selected views of
-gt/eval_cameras.sfm (MVS) or of the MVPS sfm.json (one view per pose), their masks, and for MVS the watertight
-masks, in the layout read by the evaluation (DIR/eval_cameras.sfm, DIR/masks/<view stem>.png, DIR/masks_watertight/
-in camera order)."""
+gt/eval_cameras.sfm (MVS) or of the MVPS sfm.json (one view per pose) and their silhouettes, in the layout read by
+the sparse-view evaluation (DIR/eval_cameras.sfm, DIR/masks/<view stem>.png). No watertight mask is written."""
 from __future__ import annotations
 
 import hashlib
@@ -138,25 +137,26 @@ def test_mvs_eval_sfm_keeps_the_preset_views_in_source_order(data, tmp_path, pre
     assert m["object"] == OBJ and m["preset"] == preset and m["modality"] == "mvs" and m["views"] == names
     assert m["source"] == str(data / OBJ / "gt" / "eval_cameras.sfm")
     assert m["source_md5"] == md5(data / OBJ / "gt" / "eval_cameras.sfm")
-    assert m["masks_source"] == str(data / OBJ / "gt" / "masks_eval") and m["watertight"] == "none"
+    assert m["masks_source"] == str(data / OBJ / "gt" / "masks_eval") and "watertight" not in m
     assert sorted(os.listdir(out)) == ["eval_cameras.sfm", "eval_sfm.json", "masks"]
 
 
-def test_mvs_watertight_masks_follow_the_camera_order(tmp_path, monkeypatch):
+def test_mvs_watertight_masks_are_not_written(tmp_path, monkeypatch):
+    """The watertight masks belong to the usual cleanup: none in DIR, even for an object that has them."""
     monkeypatch.setattr(subsets, "_deps", no_deps)
     root = tmp_path / "data"
     write_eval_cameras(root, watertight=True)
     out = tmp_path / "ev"
     assert run(root, out, "--preset", "360_6") == 0
-    src_cams = eval_cameras(root / OBJ / "gt" / "eval_cameras.sfm")
-    src_wt = sorted((root / OBJ / "gt" / "masks_watertight").glob("*.png"))  # paired with src_cams by index
-    by_stem = {c[0]: md5(w) for c, w in zip(src_cams, src_wt)}
-    cams = eval_cameras(out / "eval_cameras.sfm")
-    wt = sorted((out / "masks_watertight").glob("*.png"))
-    assert len(wt) == len(cams) == 6
-    assert [md5(w) for w in wt] == [by_stem[c[0]] for c in cams]
-    m = json.loads((out / "eval_sfm.json").read_text())
-    assert m["watertight"] == [str(root / OBJ / "gt" / "masks_watertight" / c[0]) for c in cams]
+    assert sorted(os.listdir(out)) == ["eval_cameras.sfm", "eval_sfm.json", "masks"]
+    assert len(eval_cameras(out / "eval_cameras.sfm")) == 6
+    assert not any("watertight" in k for k in json.loads((out / "eval_sfm.json").read_text()))
+
+
+def test_watertight_masks_option_is_gone(data, tmp_path, capsys):
+    with pytest.raises(SystemExit):
+        run(data, tmp_path / "ev", "--preset", "front3", "--watertight-masks", str(tmp_path))
+    assert "unrecognized arguments" in capsys.readouterr().err
 
 
 def test_mvs_n_views(data, tmp_path):
@@ -198,7 +198,7 @@ def test_mvps_eval_sfm_one_view_per_pose_despite_duplicated_pose_ids(data, tmp_p
     assert m["modality"] == "mvps" and m["tier"] == "d2" and m["views"] == names
     assert m["source"] == str(src_path) and m["source_md5"] == md5(src_path)
     assert m["masks_source"] == str(src_path.parent / "masks")
-    assert m["watertight"] == "none" and "MVPS" in m["watertight_note"]
+    assert "watertight" not in m
     pair = dict(zip(e["mvps"], zip(e["mvs"], e["distance_mm"])))
     assert m["paired_mvs_views"] == [pair[n][0] for n in names]
     assert m["distance_mm"] == [pair[n][1] for n in names]
@@ -336,23 +336,18 @@ def test_published_vase_mvps(tmp_path):
         assert tr == ref[mask[:-4]] and (int(v["width"]), int(v["height"])) == (4784, 3188)
         assert md5(out / "masks" / mask) == md5(src.parent / "masks" / mask)
     m = json.loads((out / "eval_sfm.json").read_text())
-    assert m["watertight"] == "none" and m["source_md5"] == md5(src) and len(m["distance_mm"]) == 6
+    assert "watertight" not in m and m["source_md5"] == md5(src) and len(m["distance_mm"]) == 6
 
 
 @pytest.mark.data
-def test_published_sneakers_mvs_watertight(tmp_path):
+def test_published_sneakers_mvs_has_no_watertight_copy(tmp_path):
     out = tmp_path / "ev"
     assert convert.main(["subsets", "--object", "sneakers", "--preset", "front3", "--data", str(DATA),
                          "--write-eval-sfm", str(out)]) == 0
-    gt = DATA / "sneakers" / "gt"
-    src_cams = eval_cameras(gt / "eval_cameras.sfm")
-    src_wt = sorted((gt / "masks_watertight").glob("*.png"))
-    assert len(src_wt) == len(src_cams)
-    by_stem = {c[0]: md5(w) for c, w in zip(src_cams, src_wt)}
+    assert (DATA / "sneakers" / "gt" / "masks_watertight").is_dir()
     cams = eval_cameras(out / "eval_cameras.sfm")
     assert [c[0] for c in cams] == ["003.png", "009.png", "072.png"]  # preset order is 072, 003, 009
-    wt = sorted((out / "masks_watertight").glob("*.png"))
-    assert [md5(w) for w in wt] == [by_stem[c[0]] for c in cams]
+    assert sorted(os.listdir(out)) == ["eval_cameras.sfm", "eval_sfm.json", "masks"]
 
 
 @pytest.mark.data
@@ -362,40 +357,4 @@ def test_published_sneakers_mvps_has_duplicated_pose_ids(tmp_path):
                          str(DATA), "--write-eval-sfm", str(out)]) == 0
     sfm = json.loads((out / "eval_cameras.sfm").read_text())
     assert len(sfm["poses"]) == len(sfm["views"]) == 3 and len(sfm["intrinsics"]) == 1
-    assert json.loads((out / "eval_sfm.json").read_text())["watertight"] == "none"
-
-
-def _watertight_dir(root: Path, names, shape=(12, 16)) -> Path:
-    wdir = root / "watertight_made" / OBJ / "d2"
-    for k, n in enumerate(names):
-        _mask(wdir / f"{n}.png", 200 - k, shape)
-    return wdir
-
-
-def test_mvps_watertight_masks_given_by_name(data, tmp_path):
-    """MVPS poses have no published watertight mask: --watertight-masks DIR gives one per pose, by name."""
-    e = preset_entry(OBJ, "front3")
-    wdir = _watertight_dir(tmp_path, e["mvps"])
-    out = tmp_path / "ev"
-    assert run(data, out, "--preset", "front3", "--modality", "mvps", "--watertight-masks", str(wdir)) == 0
-    names = [Path(v["path"]).stem for v in json.loads((out / "eval_cameras.sfm").read_text())["views"]]
-    assert sorted(p.name for p in (out / "masks_watertight").iterdir()) == sorted(f"{n}.png" for n in names)
-    for n in names:
-        assert md5(out / "masks_watertight" / f"{n}.png") == md5(wdir / f"{n}.png")
-    m = json.loads((out / "eval_sfm.json").read_text())
-    assert m["watertight_source"] == str(wdir) and m["watertight_dir"] == "masks_watertight"
-    assert "name" in m["watertight_note"]
-
-
-def test_given_watertight_mask_missing_is_an_error(data, tmp_path, capsys):
-    e = preset_entry(OBJ, "front3")
-    wdir = _watertight_dir(tmp_path, e["mvps"][:2])
-    assert run(data, tmp_path / "ev", "--preset", "front3", "--modality", "mvps", "--watertight-masks", str(wdir)) == 2
-    assert e["mvps"][2] in capsys.readouterr().err
-
-
-def test_given_watertight_mask_of_another_size_is_an_error(data, tmp_path, capsys):
-    e = preset_entry(OBJ, "front3")
-    wdir = _watertight_dir(tmp_path, e["mvps"], shape=(24, 32))
-    assert run(data, tmp_path / "ev", "--preset", "front3", "--modality", "mvps", "--watertight-masks", str(wdir)) == 2
-    assert "size" in capsys.readouterr().err
+    assert "watertight" not in json.loads((out / "eval_sfm.json").read_text())

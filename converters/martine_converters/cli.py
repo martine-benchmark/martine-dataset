@@ -167,8 +167,6 @@ def cmd_check_normals(a) -> dict:
 def cmd_subsets(a) -> dict:
     from . import subsets as sb
 
-    if a.watertight_masks and not a.write_eval_sfm:
-        raise SfmError("--watertight-masks goes with --write-eval-sfm")
     if a.write_eval_sfm and not (a.data and a.object):
         raise SfmError("--write-eval-sfm needs --data (the published dataset) and --object")
     if a.regenerate:
@@ -209,10 +207,9 @@ def _eval_sfm(a, res: dict, selection: dict) -> dict:
         from .eval_sfm import write_eval_sfm
 
         tier = a.tier if a.modality == "mvps" else None
-        m = write_eval_sfm(a.data, a.object, res, a.write_eval_sfm, a.modality, tier, a.overwrite, selection,
-                           a.watertight_masks)
-        print(f"wrote {a.write_eval_sfm}: {len(m['views'])} {a.modality.upper()} cameras from {m['source']}, "
-              f"watertight masks: {'none' if m['watertight'] == 'none' else len(m['watertight'])}")
+        m = write_eval_sfm(a.data, a.object, res, a.write_eval_sfm, a.modality, tier, a.overwrite, selection)
+        print(f"wrote {a.write_eval_sfm}: {len(m['views'])} {a.modality.upper()} cameras from {m['source']} and "
+              "their silhouettes")
     return res
 
 
@@ -313,16 +310,12 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--recompute", action="store_true", help="compute the subset even when it is precomputed")
     p.add_argument("--out", type=Path, help="also write the subsets to this JSON file")
     p.add_argument("--write-eval-sfm", type=Path, metavar="DIR",
-                   help="write the evaluation cameras of the subset to DIR (eval_cameras.sfm, masks/, "
-                        "masks_watertight/ when the object has them, eval_sfm.json), to evaluate in place of "
-                        "gt/eval_cameras.sfm; needs --data")
+                   help="write the evaluation cameras of the subset and their silhouettes to DIR "
+                        "(eval_cameras.sfm, masks/, eval_sfm.json), for the sparse-view evaluation; needs --data")
     p.add_argument("--modality", default="mvs", choices=("mvs", "mvps"),
                    help="cameras of --write-eval-sfm: mvs (gt/eval_cameras.sfm, default) or mvps (the MVPS "
                         "sfm.json of --tier, default d2)")
     p.add_argument("--overwrite", action="store_true", help="empty and reuse a previous --write-eval-sfm folder")
-    p.add_argument("--watertight-masks", type=Path, metavar="DIR",
-                   help="with --write-eval-sfm: watertight masks DIR/<view>.png of the selected views (e.g. made for "
-                        "the MVPS poses, which have none published); replaces gt/masks_watertight")
     p.add_argument("--regenerate", type=Path, metavar="FILE",
                    help="compute the subsets of every object of --data for N = 5, 10, 20, 40 and write them to FILE "
                         "(the precomputed table is martine_converters/view_subsets.json)")

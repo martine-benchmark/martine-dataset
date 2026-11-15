@@ -2,25 +2,22 @@
 # Copyright (c) 2026 Baptiste Brument and the Martine authors
 """Evaluation camera set of a view subset (``martine-convert subsets ... --write-eval-sfm DIR``).
 
-The evaluation cleans the GT and the reconstruction by visibility in the evaluation cameras (by default
-``gt/eval_cameras.sfm`` and ``gt/masks_eval/``). For a sparse-view result, ``DIR`` holds the cameras of the subset
-instead, in the same layout:
+The evaluation cleans the reconstruction by visibility in the evaluation cameras (``gt/eval_cameras.sfm``,
+``gt/masks_eval/`` and, for some objects, ``gt/masks_watertight/``). For a sparse-view result it then filters the
+cleaned reconstruction and the GT point cloud a second time, by visibility in the views of the subset: ``DIR`` holds
+their cameras and silhouettes. The watertight masks belong to the first step only, so none is written here.
 
 * ``DIR/eval_cameras.sfm``: AliceVision SfMData restricted to the selected views, their poses and intrinsics, in the
   raw AliceVision frame of the source (that of ``eval_cameras.sfm``, the MVS and the MVPS ``sfm.json``) and in its view
   order. The view paths are ``masks/<stem>.png``: the evaluation finds the mask of a view by the basename stem of its
   path.
 * ``DIR/masks/<stem>.png``: copies of the source masks (``gt/masks_eval/NNN.png``; MVPS ``masks/pose_KK.png``).
-* ``DIR/masks_watertight/`` (MVS, objects with ``gt/masks_watertight/``): the evaluation pairs these masks with the
-  cameras by index, in sorted file-name order, so the copies keep the camera order of ``DIR/eval_cameras.sfm``.
 * ``DIR/eval_sfm.json``: what was selected and from which files.
 
 MVS: source ``<data>/<object>/gt/eval_cameras.sfm`` (full resolution). MVPS: source
 ``<data>/<object>/mvps/<tier>/sfm.json`` (the real MVPS cameras at that tier), one view per pose (``lighting_00``, else
 the first image of the pose). A pose is identified by its ``images/pose_KK/`` folder, never by its poseId alone: some
-published MVPS files repeat a poseId once per image. No watertight mask is published for the MVPS poses:
-``--watertight-masks DIR`` gives them (``DIR/<stem>.png`` for every selected view, the size of its mask), copied to
-``DIR/masks_watertight/<stem>.png`` and paired with the cameras by name. It replaces the published ones for MVS too.
+published MVPS files repeat a poseId once per image.
 """
 from __future__ import annotations
 
@@ -102,17 +99,7 @@ def _mvs(data: Path, obj: str, names: Sequence[str]) -> dict:
     idx = [i for i, s in enumerate(stems) if s in keep]
     sel = [stems[i] for i in idx]
     plan = {"source": src, "sfm": _subset_sfm(sfm, [cams[i] for i in idx], sel), "views": sel,
-            "masks_source": gt / "masks_eval", "masks": {f"{s}.png": gt / "masks_eval" / f"{s}.png" for s in sel},
-            "watertight": {}}
-    wdir = gt / "masks_watertight"
-    if wdir.is_dir():
-        wt = sorted(wdir.glob("*.png"))  # paired with the cameras by index, as in the evaluation
-        if len(wt) != len(cams):
-            raise SfmError(f"{wdir}: {len(wt)} masks for {len(cams)} cameras in {src}")
-        out_names = [f"{s}.png" for s in sel]
-        if sorted(out_names) != out_names:  # keep the camera order in the sorted file names
-            out_names = [f"{k:03d}_{s}.png" for k, s in enumerate(sel)]
-        plan["watertight"] = {n: wt[i] for n, i in zip(out_names, idx)}
+            "masks_source": gt / "masks_eval", "masks": {f"{s}.png": gt / "masks_eval" / f"{s}.png" for s in sel}}
     return plan
 
 
@@ -155,27 +142,7 @@ def _mvps(data: Path, obj: str, names: Sequence[str], tier: str) -> dict:
         owner[pid] = name
     mdir = src.parent / "masks"
     return {"source": src, "sfm": _subset_sfm(sfm, chosen, sel), "views": sel, "masks_source": mdir,
-            "masks": {f"{s}.png": mdir / f"{s}.png" for s in sel}, "watertight": {}}
-
-
-def _png_size(path: Path) -> tuple:
-    head = Path(path).read_bytes()[:24]
-    if head[:8] != b"\x89PNG\r\n\x1a\n":
-        raise SfmError(f"{path} is not a PNG")
-    return int.from_bytes(head[16:20], "big"), int.from_bytes(head[20:24], "big")
-
-
-def _given_watertight(plan: dict, wdir: Path) -> dict:
-    """``<stem>.png`` of ``wdir`` for every selected view, the size of its silhouette mask."""
-    out = {}
-    for dst, mask in plan["masks"].items():
-        src = Path(wdir) / dst
-        if not src.is_file():
-            raise SfmError(f"--watertight-masks {wdir}: no {dst} for the view {Path(dst).stem}")
-        if mask.is_file() and _png_size(src) != _png_size(mask):
-            raise SfmError(f"{src}: size {_png_size(src)} differs from the mask {mask} {_png_size(mask)}")
-        out[dst] = src
-    return out
+            "masks": {f"{s}.png": mdir / f"{s}.png" for s in sel}}
 
 
 def _prepare(out: Path, data: Path, overwrite: bool) -> None:
@@ -198,8 +165,7 @@ def _prepare(out: Path, data: Path, overwrite: bool) -> None:
 
 
 def write_eval_sfm(data: Path, obj: str, pairs: dict, out: Path, modality: str = "mvs", tier: Optional[str] = None,
-                   overwrite: bool = False, selection: Optional[dict] = None,
-                   watertight_dir: Optional[Path] = None) -> dict:
+                   overwrite: bool = False, selection: Optional[dict] = None) -> dict:
     """Write the evaluation camera set of ``pairs[modality]`` (``pairs``: ``{"mvs", "mvps", "distance_mm"}`` of a
     preset or subset) to ``out``; returns the manifest. ``selection``: ``{"preset": name}`` or ``{"n_views": n}``."""
     data, out = Path(data), Path(out)
@@ -211,33 +177,18 @@ def write_eval_sfm(data: Path, obj: str, pairs: dict, out: Path, modality: str =
         plan = _mvps(data, obj, pairs["mvps"], tier)
     else:
         raise SfmError(f"unknown modality {modality!r}")
-    if watertight_dir is not None:
-        plan["watertight"] = _given_watertight(plan, Path(watertight_dir))
-    for dst, src in {**plan["masks"], **plan["watertight"]}.items():
+    for dst, src in plan["masks"].items():
         if not src.is_file():
             raise SfmError(f"no mask {src} for {dst}")
     _prepare(out, data, overwrite)
-    for sub, files in (("masks", plan["masks"]), ("masks_watertight", plan["watertight"])):
-        if files:
-            (out / sub).mkdir()
-        for dst, src in files.items():
-            shutil.copyfile(src, out / sub / dst)
+    (out / "masks").mkdir()
+    for dst, src in plan["masks"].items():
+        shutil.copyfile(src, out / "masks" / dst)
     (out / SFM_NAME).write_text(json.dumps(plan["sfm"], indent=4) + "\n")
     manifest = {"object": obj, **(selection or {}), "modality": modality, "tier": tier, "views": plan["views"],
                 "sfm": SFM_NAME, "source": str(plan["source"]), "source_md5": _md5(plan["source"]),
                 "frame": "raw AliceVision frame of the source (unchanged)", "masks": "masks",
                 "masks_source": str(plan["masks_source"])}
-    if plan["watertight"]:
-        manifest["watertight"] = [str(p) for p in plan["watertight"].values()]
-        manifest["watertight_dir"] = "masks_watertight"
-        manifest["watertight_note"] = "sorted file names in the camera order of " + SFM_NAME
-        if watertight_dir is not None:
-            manifest["watertight_source"] = str(watertight_dir)
-            manifest["watertight_note"] = "given by --watertight-masks, one per view, paired with the cameras by name"
-    else:
-        manifest["watertight"] = "none"
-        manifest["watertight_note"] = ("no watertight masks exist for the MVPS poses" if modality == "mvps" else
-                                       "the object has no gt/masks_watertight")
     if modality == "mvps":
         pair = dict(zip(pairs["mvps"], zip(pairs["mvs"], pairs["distance_mm"])))
         manifest["paired_mvs_views"] = [pair[n][0] for n in plan["views"]]

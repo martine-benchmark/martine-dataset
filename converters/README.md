@@ -135,21 +135,25 @@ MVPS --views pose_09,pose_17,pose_26
 ```
 
 **Evaluation cameras of a preset.** `martine-convert subsets ... --data <root> --write-eval-sfm DIR` (with `--preset`
-or `--n-views`) writes the cameras of the subset, to clean the GT and the reconstruction by visibility in those
-views instead of all of `gt/eval_cameras.sfm`: `DIR/eval_cameras.sfm` (the selected views, their poses and
-intrinsics, in the raw frame and view order of the source; each view path is `masks/<view>.png`), `DIR/masks/`, and
-for the objects with `gt/masks_watertight/` (sneakers, wood) `DIR/masks_watertight/`, whose sorted file names follow
-the camera order. `DIR/eval_sfm.json` records the views, the source file and its MD5. `--modality mvs` (default)
-takes the views from `gt/eval_cameras.sfm` and `gt/masks_eval/`; `--modality mvps` takes the real MVPS cameras of
-`mvps/<tier>/sfm.json` (`--tier`, default `d2`), one per pose (`lighting_00`), with `mvps/<tier>/masks/`. No
-watertight masks are published for the MVPS poses: `--watertight-masks WDIR` gives them (`WDIR/<view>.png` for every
-selected view, the size of its mask), copied to `DIR/masks_watertight/` and paired with the cameras by name; it also
-replaces the published ones for MVS. `DIR` must be empty, outside the data root (`--overwrite` reuses a
+or `--n-views`) writes the cameras of the subset and their silhouettes, for the sparse-view evaluation: after its
+usual cleanup, the evaluation filters the reconstruction and the GT point cloud a second time by visibility in those
+views. `DIR/eval_cameras.sfm` holds the selected views, their poses and intrinsics, in the raw frame and view order
+of the source (each view path is `masks/<view>.png`), `DIR/masks/` their silhouettes, and `DIR/eval_sfm.json`
+records the views, the source file and its MD5. `--modality mvs` (default) takes the views from
+`gt/eval_cameras.sfm` and `gt/masks_eval/`; `--modality mvps` takes the real MVPS cameras of `mvps/<tier>/sfm.json`
+(`--tier`, default `d2`), one per pose (`lighting_00`), with `mvps/<tier>/masks/`. No watertight mask is written:
+the usual cleanup has already applied them. `DIR` must be empty, outside the data root (`--overwrite` reuses a
 previous `DIR`).
 
 ```bash
 uv run martine-convert subsets --data $DATA --object sneakers --preset front3 --write-eval-sfm work/sneakers_front3_eval
 uv run martine-convert subsets --data $DATA --object vase --preset 360_6 --modality mvps --write-eval-sfm work/vase_360_6_mvps_eval
+```
+
+The evaluation then takes the file with `--views` (its tag is the file name, here set with `--variant`):
+
+```bash
+uv run eval-pipeline -c $CFG run -o sneakers -m my_method --views work/sneakers_front3_eval/eval_cameras.sfm --variant front3
 ```
 
 ## Conventions
