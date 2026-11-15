@@ -11,6 +11,7 @@ Subcommands (see converters/README.md):
   mvps           PS normals (+ reflectance)       -> rnbneus2 | supernormal
   check-normals  PS normals                       -> GT-free check of their camera-axes convention
   subsets        MVS + MVPS sfm.json              -> paired view subsets of N views (also --n-views), presets
+                                                      (--write-eval-sfm: their evaluation cameras)
   list           formats and pixel-centre conventions
 
 The cameras are read from ONE AliceVision sfm.json; only the pixel-centre offset of the target method is added
@@ -166,6 +167,8 @@ def cmd_check_normals(a) -> dict:
 def cmd_subsets(a) -> dict:
     from . import subsets as sb
 
+    if a.write_eval_sfm and not (a.data and a.object):
+        raise SfmError("--write-eval-sfm needs --data (the published dataset) and --object")
     if a.regenerate:
         if not a.data:
             raise SfmError("--regenerate needs --data (the published dataset)")
@@ -181,7 +184,8 @@ def cmd_subsets(a) -> dict:
         res, source = {k: e[k] for k in ("mvs", "mvps", "distance_mm")}, "preset"
         print(f"{a.object}: preset {a.preset} ({sb.load_presets()['presets'][a.preset]} MVPS: pose nearest to each "
               "view)")
-        return _print_pairs(a, res, {"object": a.object, "preset": a.preset, "source": source})
+        return _eval_sfm(a, _print_pairs(a, res, {"object": a.object, "preset": a.preset, "source": source}),
+                         {"preset": a.preset})
     if not (a.object and a.n_views):
         raise SfmError("give --object and --n-views or --preset (or --regenerate)")
     entry = None if a.recompute else sb.table_entry(a.object, a.n_views)
@@ -194,7 +198,19 @@ def cmd_subsets(a) -> dict:
         res, source = sb.paired_subsets(mvs, mvps, a.n_views), "computed"
     print(f"{a.object}: {a.n_views} views, {source} (k-means on the MVS camera centres; MVPS pose nearest to each "
           "view)")
-    return _print_pairs(a, res, {"object": a.object, "n_views": a.n_views, "source": source})
+    return _eval_sfm(a, _print_pairs(a, res, {"object": a.object, "n_views": a.n_views, "source": source}),
+                     {"n_views": a.n_views})
+
+
+def _eval_sfm(a, res: dict, selection: dict) -> dict:
+    if a.write_eval_sfm:
+        from .eval_sfm import write_eval_sfm
+
+        tier = a.tier if a.modality == "mvps" else None
+        m = write_eval_sfm(a.data, a.object, res, a.write_eval_sfm, a.modality, tier, a.overwrite, selection)
+        print(f"wrote {a.write_eval_sfm}: {len(m['views'])} {a.modality.upper()} cameras from {m['source']}, "
+              f"watertight masks: {'none' if m['watertight'] == 'none' else len(m['watertight'])}")
+    return res
 
 
 def _print_pairs(a, res: dict, extra: dict) -> dict:
@@ -289,9 +305,18 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--data", type=Path, help="root of the published dataset (needed to compute a subset that is not "
                                              "precomputed, and for --regenerate)")
     p.add_argument("--tier", help="tier folder read for the camera centres (default, or when a modality lacks it: "
-                                  "the first one; the subsets do not depend on it)")
+                                  "the first one; the subsets do not depend on it); with --write-eval-sfm --modality "
+                                  "mvps, the tier of the MVPS cameras (default d2)")
     p.add_argument("--recompute", action="store_true", help="compute the subset even when it is precomputed")
     p.add_argument("--out", type=Path, help="also write the subsets to this JSON file")
+    p.add_argument("--write-eval-sfm", type=Path, metavar="DIR",
+                   help="write the evaluation cameras of the subset to DIR (eval_cameras.sfm, masks/, "
+                        "masks_watertight/ when the object has them, eval_sfm.json), to evaluate in place of "
+                        "gt/eval_cameras.sfm; needs --data")
+    p.add_argument("--modality", default="mvs", choices=("mvs", "mvps"),
+                   help="cameras of --write-eval-sfm: mvs (gt/eval_cameras.sfm, default) or mvps (the MVPS "
+                        "sfm.json of --tier, default d2)")
+    p.add_argument("--overwrite", action="store_true", help="empty and reuse a previous --write-eval-sfm folder")
     p.add_argument("--regenerate", type=Path, metavar="FILE",
                    help="compute the subsets of every object of --data for N = 5, 10, 20, 40 and write them to FILE "
                         "(the precomputed table is martine_converters/view_subsets.json)")

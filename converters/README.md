@@ -134,6 +134,22 @@ MVS  --views 009,017,026
 MVPS --views pose_09,pose_17,pose_26
 ```
 
+**Evaluation cameras of a preset.** `martine-convert subsets ... --data <root> --write-eval-sfm DIR` (with `--preset`
+or `--n-views`) writes the cameras of the subset, to clean the GT and the reconstruction by visibility in those
+views instead of all of `gt/eval_cameras.sfm`: `DIR/eval_cameras.sfm` (the selected views, their poses and
+intrinsics, in the raw frame and view order of the source; each view path is `masks/<view>.png`), `DIR/masks/`, and
+for the objects with `gt/masks_watertight/` (sneakers, wood) `DIR/masks_watertight/`, whose sorted file names follow
+the camera order. `DIR/eval_sfm.json` records the views, the source file and its MD5. `--modality mvs` (default)
+takes the views from `gt/eval_cameras.sfm` and `gt/masks_eval/`; `--modality mvps` takes the real MVPS cameras of
+`mvps/<tier>/sfm.json` (`--tier`, default `d2`), one per pose (`lighting_00`), with `mvps/<tier>/masks/` (no
+watertight masks exist for the MVPS poses). `DIR` must be empty, outside the data root (`--overwrite` reuses a
+previous `DIR`).
+
+```bash
+uv run martine-convert subsets --data $DATA --object sneakers --preset front3 --write-eval-sfm work/sneakers_front3_eval
+uv run martine-convert subsets --data $DATA --object vase --preset 360_6 --modality mvps --write-eval-sfm work/vase_360_6_mvps_eval
+```
+
 ## Conventions
 
 - **Pixel centre.** AliceVision (the published `sfm.json`) puts the centre of the top-left pixel at (0, 0):
