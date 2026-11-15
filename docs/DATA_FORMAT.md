@@ -57,8 +57,8 @@ MVPS pose *k* are close viewpoints, but distinct shots with their own poses.
   the `sfm.json` view paths, and in `gt/eval_cameras.sfm` / `gt/masks_eval/NNN.png`.
 - **MVPS poses**: `pose_KK/` are numbered in capture order as well.
 - **MVPS lights**: the LEDs fire in the same fixed sequence at every pose, so `lighting_LL.exr` is always lit by
-  LED `LL`, for every pose and object; `calibration/lights/` gives LED `LL` at index `LL`. LED 24 gives much darker
-  images (grazing light): they are neither missing nor corrupt.
+  LED `LL`, for every pose and object; `calibration/lights/` gives LED `LL` at index `LL`. Some images of the LEDs
+  at the bottom of the dome must not be used: see [MVPS LEDs 24 and 25](#mvps-leds-24-and-25).
 - **MVPS black frames**: `dark/pose_KK.exr` is the shot taken with every LED off at pose `KK` (the first of the 31
   shots of the pose), developed exactly like its `lighting_LL.exr` (same camera, undistortion, resolution and mask),
   e.g. to subtract the ambient light and the sensor offset. It has no view in `sfm.json`: use the camera of pose
@@ -71,6 +71,27 @@ MVPS pose *k* are close viewpoints, but distinct shots with their own poses.
   `poses` of `sfm.json`, and they are absent from `gt/eval_cameras.sfm` and `gt/masks_eval/` (81 evaluation views
   for `grid`). Skip views without a pose when loading the cameras. Every other view and every MVPS pose of every
   object has a pose.
+
+## MVPS LEDs 24 and 25
+
+LEDs 24 and 25 sit at the bottom of the light dome. When the camera is low (elevation above the turntable below
+about 40°), they do not light the object: `lighting_24.exr` and `lighting_25.exr` are black (no more than the black
+frame `dark/pose_KK.exr`) or, in a transition zone, only dimly lit. **Do not use LEDs 24 and 25 at the
+following 40 MVPS poses**, for every object and every tier (camera elevation below 41°):
+
+`00 01 03 04 09 10 12 17 18 20 21 26 29 30 34 35 36 37 38 43 44 45 46 52 53 54 57 61 62 63 64 65 69 70 71 72 73 77 79 80`
+
+At the 44 other poses they are lit. LED 24 stays darker and slightly yellower than the others there (about half the
+median of the 30 LEDs; its calibrated intensity in `calibration/lights/` is about 57 % of the median): it is a
+property of that LED, not an occlusion.
+
+At the lowest poses (33° or less), a few images of neighbouring LEDs (14, 15, 16, 23, 26) are black as well for some
+objects, mostly flat ones (`plate`, `paw_pad`, `coin`, `vase`): 128 images over 19 objects, also not to be used.
+
+[`mvps_led_exclusions.json`](mvps_led_exclusions.json) gives both lists in machine-readable form (`all_objects`:
+LEDs 24 and 25; `per_object`: the other black images, by object and LED), with the camera elevation of each pose.
+They were measured on the 28 objects at d8, against the black frame of each pose: an image is black when the 99th
+percentile of `lighting_LL − dark` inside the pose mask is below 2 % of the median over the 30 LEDs of the pose.
 
 ## Camera conventions
 
