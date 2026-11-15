@@ -1,0 +1,100 @@
+{
+ "description": "MVPS images that must not be used. LEDs 24 and 25 sit at the bottom of the light dome: at low camera elevations they do not light the object (black images) or only dimly. Images listed here are lighting_LL.exr of pose_KK, in every MVPS tier (d2, d4, d8).",
+ "doc": "docs/DATA_FORMAT.md#mvps-leds-24-and-25",
+ "all_objects": {
+  "rule": "LEDs 24 and 25 at every pose whose camera elevation above the turntable is below 41 deg (black and transition zone), for every object.",
+  "leds": {
+   "24": [0, 1, 3, 4, 9, 10, 12, 17, 18, 20, 21, 26, 29, 30, 34, 35, 36, 37, 38, 43, 44, 45, 46, 52, 53, 54, 57, 61, 62, 63, 64, 65, 69, 70, 71, 72, 73, 77, 79, 80],
+   "25": [0, 1, 3, 4, 9, 10, 12, 17, 18, 20, 21, 26, 29, 30, 34, 35, 36, 37, 38, 43, 44, 45, 46, 52, 53, 54, 57, 61, 62, 63, 64, 65, 69, 70, 71, 72, 73, 77, 79, 80]
+  }
+ },
+ "per_object": {
+  "rule": "Other LEDs, black for this object only: 99th percentile of (lighting_LL - dark/pose_KK) inside the pose mask below 2 % of the median over the 30 LEDs of the pose. Only at the lowest poses (<= 33 deg), mostly on flat objects.",
+  "objects": {
+   "bowl": {
+    "23": [69],
+    "26": [34, 72]
+   },
+   "can": {
+    "26": [34]
+   },
+   "candle": {
+    "15": [17],
+    "23": [69],
+    "26": [34, 43, 72]
+   },
+   "coin": {
+    "15": [17, 34, 43, 52, 61],
+    "23": [3, 17, 44, 61, 69],
+    "26": [34, 43, 53, 72, 77]
+   },
+   "colander": {
+    "23": [69],
+    "26": [34]
+   },
+   "glass": {
+    "26": [34]
+   },
+   "hammer_head": {
+    "23": [69],
+    "26": [34, 72]
+   },
+   "jam_pot": {
+    "23": [69],
+    "26": [34]
+   },
+   "lego": {
+    "23": [69],
+    "26": [34, 72]
+   },
+   "paw_pad": {
+    "15": [0, 9, 17, 34, 43, 52, 61, 69],
+    "16": [34],
+    "23": [3, 17, 44, 61, 69],
+    "26": [4, 34, 43, 52, 53, 72, 77]
+   },
+   "petanque_ball": {
+    "23": [69],
+    "26": [34, 72]
+   },
+   "pillow": {
+    "26": [34]
+   },
+   "plate": {
+    "14": [17, 69],
+    "15": [0, 9, 17, 26, 34, 35, 43, 44, 52, 61, 69, 72, 77],
+    "16": [34, 43, 72],
+    "23": [3, 9, 17, 35, 44, 52, 61, 69, 79],
+    "26": [0, 4, 20, 34, 43, 52, 53, 72, 77]
+   },
+   "rock": {
+    "23": [69],
+    "26": [34, 43, 72, 77]
+   },
+   "spikes_ball": {
+    "15": [17, 52],
+    "23": [69],
+    "26": [34, 43, 72]
+   },
+   "spine": {
+    "23": [69],
+    "26": [34, 72]
+   },
+   "surgery_scissors": {
+    "23": [69],
+    "26": [34]
+   },
+   "vase": {
+    "15": [17, 43, 52],
+    "23": [3, 17, 44, 61, 69],
+    "26": [34, 43, 72, 77]
+   },
+   "wood": {
+    "23": [69],
+    "26": [34, 43, 72]
+   }
+  }
+ },
+ "measurement": "28 objects x 84 poses x 30 LEDs at d8, against the black frame of each pose (dark/pose_KK.exr). Every black image of LEDs 24 and 25 (same 2 % threshold) is in the all_objects list.",
+ "camera_elevation_deg": [27.7, 36.1, 45.5, 30.9, 32.7, 41.7, 59.4, 51.9, 65.3, 27.4, 32.5, 41.4, 35.8, 51.5, 47.3, 58.9, 64.6, 25.2, 38.8, 44.6, 30.1, 33.5, 48.5, 60.6, 55.4, 63.8, 29.9, 44.2, 50.5, 35.0, 38.5, 48.2, 55.0, 63.2, 26.2, 29.4, 38.1, 34.6, 40.0, 49.9, 43.7, 54.5, 62.5, 25.8, 29.1, 34.2, 39.6, 56.5, 49.4, 54.0, 43.3, 61.8, 25.5, 30.4, 33.8, 42.9, 49.0, 39.1, 44.9, 55.8, 61.1, 27.1, 35.5, 32.1, 37.3, 41.0, 51.1, 46.8, 58.3, 26.7, 40.5, 31.7, 28.4, 36.9, 46.4, 52.9, 57.8, 28.0, 45.9, 31.3, 36.5, 42.1, 52.4, 57.2]
+}

@@ -119,6 +119,8 @@ per-property scores), as in the paper: [docs/EVALUATION.md](docs/EVALUATION.md).
 - **Image-to-GT alignment**: contour ICP; 1.22 px mean leave-one-out residual at d1, below 2 px for all 26 objects.
 - **Lights**: `calibration/lights/` (per-LED position, axis, intensity; isotropic and anisotropic models); PS
   normals on the calibration spheres within 0.63° of the true ones.
+  LEDs 24 and 25 do not light the object at the low camera poses: do not use them at the 40 poses listed in
+  [MVPS LEDs 24 and 25](docs/DATA_FORMAT.md#mvps-leds-24-and-25) (also in `docs/mvps_led_exclusions.json`).
 - **Calibration spheres**: `calibration/spheres/{lambertian,specular}/`, the captures behind the light calibration,
   at d1: 20 turntable views x 30 LEDs, LEDs-off frames, sphere masks, cameras (`sfm.json`) and the fitted sphere
   (`sphere.json`).
