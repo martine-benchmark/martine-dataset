@@ -141,8 +141,10 @@ intrinsics, in the raw frame and view order of the source; each view path is `ma
 for the objects with `gt/masks_watertight/` (sneakers, wood) `DIR/masks_watertight/`, whose sorted file names follow
 the camera order. `DIR/eval_sfm.json` records the views, the source file and its MD5. `--modality mvs` (default)
 takes the views from `gt/eval_cameras.sfm` and `gt/masks_eval/`; `--modality mvps` takes the real MVPS cameras of
-`mvps/<tier>/sfm.json` (`--tier`, default `d2`), one per pose (`lighting_00`), with `mvps/<tier>/masks/` (no
-watertight masks exist for the MVPS poses). `DIR` must be empty, outside the data root (`--overwrite` reuses a
+`mvps/<tier>/sfm.json` (`--tier`, default `d2`), one per pose (`lighting_00`), with `mvps/<tier>/masks/`. No
+watertight masks are published for the MVPS poses: `--watertight-masks WDIR` gives them (`WDIR/<view>.png` for every
+selected view, the size of its mask), copied to `DIR/masks_watertight/` and paired with the cameras by name; it also
+replaces the published ones for MVS. `DIR` must be empty, outside the data root (`--overwrite` reuses a
 previous `DIR`).
 
 ```bash

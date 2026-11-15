@@ -18,7 +18,9 @@ instead, in the same layout:
 MVS: source ``<data>/<object>/gt/eval_cameras.sfm`` (full resolution). MVPS: source
 ``<data>/<object>/mvps/<tier>/sfm.json`` (the real MVPS cameras at that tier), one view per pose (``lighting_00``, else
 the first image of the pose). A pose is identified by its ``images/pose_KK/`` folder, never by its poseId alone: some
-published MVPS files repeat a poseId once per image. No watertight mask exists for the MVPS poses.
+published MVPS files repeat a poseId once per image. No watertight mask is published for the MVPS poses:
+``--watertight-masks DIR`` gives them (``DIR/<stem>.png`` for every selected view, the size of its mask), copied to
+``DIR/masks_watertight/<stem>.png`` and paired with the cameras by name. It replaces the published ones for MVS too.
 """
 from __future__ import annotations
 
@@ -156,6 +158,26 @@ def _mvps(data: Path, obj: str, names: Sequence[str], tier: str) -> dict:
             "masks": {f"{s}.png": mdir / f"{s}.png" for s in sel}, "watertight": {}}
 
 
+def _png_size(path: Path) -> tuple:
+    head = Path(path).read_bytes()[:24]
+    if head[:8] != b"\x89PNG\r\n\x1a\n":
+        raise SfmError(f"{path} is not a PNG")
+    return int.from_bytes(head[16:20], "big"), int.from_bytes(head[20:24], "big")
+
+
+def _given_watertight(plan: dict, wdir: Path) -> dict:
+    """``<stem>.png`` of ``wdir`` for every selected view, the size of its silhouette mask."""
+    out = {}
+    for dst, mask in plan["masks"].items():
+        src = Path(wdir) / dst
+        if not src.is_file():
+            raise SfmError(f"--watertight-masks {wdir}: no {dst} for the view {Path(dst).stem}")
+        if mask.is_file() and _png_size(src) != _png_size(mask):
+            raise SfmError(f"{src}: size {_png_size(src)} differs from the mask {mask} {_png_size(mask)}")
+        out[dst] = src
+    return out
+
+
 def _prepare(out: Path, data: Path, overwrite: bool) -> None:
     o, d = Path(os.path.realpath(out)), Path(os.path.realpath(data))
     if o == d or d in o.parents:
@@ -176,7 +198,8 @@ def _prepare(out: Path, data: Path, overwrite: bool) -> None:
 
 
 def write_eval_sfm(data: Path, obj: str, pairs: dict, out: Path, modality: str = "mvs", tier: Optional[str] = None,
-                   overwrite: bool = False, selection: Optional[dict] = None) -> dict:
+                   overwrite: bool = False, selection: Optional[dict] = None,
+                   watertight_dir: Optional[Path] = None) -> dict:
     """Write the evaluation camera set of ``pairs[modality]`` (``pairs``: ``{"mvs", "mvps", "distance_mm"}`` of a
     preset or subset) to ``out``; returns the manifest. ``selection``: ``{"preset": name}`` or ``{"n_views": n}``."""
     data, out = Path(data), Path(out)
@@ -188,6 +211,8 @@ def write_eval_sfm(data: Path, obj: str, pairs: dict, out: Path, modality: str =
         plan = _mvps(data, obj, pairs["mvps"], tier)
     else:
         raise SfmError(f"unknown modality {modality!r}")
+    if watertight_dir is not None:
+        plan["watertight"] = _given_watertight(plan, Path(watertight_dir))
     for dst, src in {**plan["masks"], **plan["watertight"]}.items():
         if not src.is_file():
             raise SfmError(f"no mask {src} for {dst}")
@@ -206,6 +231,9 @@ def write_eval_sfm(data: Path, obj: str, pairs: dict, out: Path, modality: str =
         manifest["watertight"] = [str(p) for p in plan["watertight"].values()]
         manifest["watertight_dir"] = "masks_watertight"
         manifest["watertight_note"] = "sorted file names in the camera order of " + SFM_NAME
+        if watertight_dir is not None:
+            manifest["watertight_source"] = str(watertight_dir)
+            manifest["watertight_note"] = "given by --watertight-masks, one per view, paired with the cameras by name"
     else:
         manifest["watertight"] = "none"
         manifest["watertight_note"] = ("no watertight masks exist for the MVPS poses" if modality == "mvps" else

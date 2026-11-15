@@ -363,3 +363,39 @@ def test_published_sneakers_mvps_has_duplicated_pose_ids(tmp_path):
     sfm = json.loads((out / "eval_cameras.sfm").read_text())
     assert len(sfm["poses"]) == len(sfm["views"]) == 3 and len(sfm["intrinsics"]) == 1
     assert json.loads((out / "eval_sfm.json").read_text())["watertight"] == "none"
+
+
+def _watertight_dir(root: Path, names, shape=(12, 16)) -> Path:
+    wdir = root / "watertight_made" / OBJ / "d2"
+    for k, n in enumerate(names):
+        _mask(wdir / f"{n}.png", 200 - k, shape)
+    return wdir
+
+
+def test_mvps_watertight_masks_given_by_name(data, tmp_path):
+    """MVPS poses have no published watertight mask: --watertight-masks DIR gives one per pose, by name."""
+    e = preset_entry(OBJ, "front3")
+    wdir = _watertight_dir(tmp_path, e["mvps"])
+    out = tmp_path / "ev"
+    assert run(data, out, "--preset", "front3", "--modality", "mvps", "--watertight-masks", str(wdir)) == 0
+    names = [Path(v["path"]).stem for v in json.loads((out / "eval_cameras.sfm").read_text())["views"]]
+    assert sorted(p.name for p in (out / "masks_watertight").iterdir()) == sorted(f"{n}.png" for n in names)
+    for n in names:
+        assert md5(out / "masks_watertight" / f"{n}.png") == md5(wdir / f"{n}.png")
+    m = json.loads((out / "eval_sfm.json").read_text())
+    assert m["watertight_source"] == str(wdir) and m["watertight_dir"] == "masks_watertight"
+    assert "name" in m["watertight_note"]
+
+
+def test_given_watertight_mask_missing_is_an_error(data, tmp_path, capsys):
+    e = preset_entry(OBJ, "front3")
+    wdir = _watertight_dir(tmp_path, e["mvps"][:2])
+    assert run(data, tmp_path / "ev", "--preset", "front3", "--modality", "mvps", "--watertight-masks", str(wdir)) == 2
+    assert e["mvps"][2] in capsys.readouterr().err
+
+
+def test_given_watertight_mask_of_another_size_is_an_error(data, tmp_path, capsys):
+    e = preset_entry(OBJ, "front3")
+    wdir = _watertight_dir(tmp_path, e["mvps"], shape=(24, 32))
+    assert run(data, tmp_path / "ev", "--preset", "front3", "--modality", "mvps", "--watertight-masks", str(wdir)) == 2
+    assert "size" in capsys.readouterr().err
