@@ -8,6 +8,9 @@
 * MVPS: for each selected MVS view, the nearest MVPS pose, without duplicate (optimal assignment on the distance
   between camera centres, scipy ``linear_sum_assignment``).
 
+Sparse-view presets (``--preset front3`` | ``360_6``, ``view_presets.json``): fixed MVS views per object, with the
+MVPS pose nearest to each of them (the same pairing); they need neither scikit-learn and scipy nor the MVS sfm.json.
+
 Only the camera centres are used, so the subsets do not depend on the resolution tier. The subsets of the published
 objects for N = 5, 10, 20, 40 are precomputed in ``view_subsets.json`` (``martine-convert subsets --regenerate``):
 for them, neither the MVS ``sfm.json`` nor scikit-learn and scipy are needed. Other subsets are computed, which needs
@@ -31,6 +34,8 @@ PathLike = Union[str, "os.PathLike[str]"]
 SEED = 42
 TABLE = "view_subsets.json"
 TABLE_N = (5, 10, 20, 40)
+PRESETS_TABLE = "view_presets.json"
+PRESETS = ("front3", "360_6")
 
 
 def _deps():
@@ -100,6 +105,38 @@ def table_entry(obj: Optional[str], n: int) -> Optional[dict]:
     return load_table()["objects"].get(obj, {}).get(str(n)) if obj else None
 
 
+@functools.lru_cache(maxsize=None)
+def load_presets() -> dict:
+    """Sparse-view presets: ``{"presets": {name: rule}, "objects": {object: {name: {"mvs", "mvps", "distance_mm"}}}}``."""
+    return json.loads(files("martine_converters").joinpath(PRESETS_TABLE).read_text())
+
+
+def preset_entry(obj: Optional[str], name: str) -> dict:
+    if name not in PRESETS:
+        raise SfmError(f"unknown preset {name!r} (presets: {', '.join(PRESETS)})")
+    entry = load_presets()["objects"].get(obj, {}).get(name) if obj else None
+    if entry is None:
+        raise SfmError(f"no preset {name} for {obj or 'this sfm.json (not in the published layout: give --object)'}"
+                       f" (presets exist for the {len(load_presets()['objects'])} objects with a GT)")
+    return entry
+
+
+def _keep(scene: Scene, chosen: Sequence[str], sfm_path: PathLike, what: str) -> List[str]:
+    """Names of ``chosen`` in the capture order of ``scene``; every one must be in it."""
+    missing = sorted(set(chosen) - set(scene.names))
+    if missing:
+        raise SfmError(f"{sfm_path}: views {missing} of {what} are not in it")
+    keep = set(chosen)
+    return [u.name for u in scene.units if u.name in keep]
+
+
+def preset_names(sfm_path: PathLike, name: str, obj: Optional[str] = None) -> List[str]:
+    """Names of the views of preset ``name`` in this sfm.json (MVS or MVPS), in its capture order."""
+    scene = read_sfm(sfm_path, frame="gt")
+    obj = obj or object_of(sfm_path)
+    return _keep(scene, preset_entry(obj, name)[scene.modality], sfm_path, f"the preset {name} of {obj}")
+
+
 def object_of(sfm_path: PathLike) -> Optional[str]:
     """Object name of an sfm.json in the published layout ``<root>/<object>/<modality>/<tier>/sfm.json``."""
     p = Path(os.path.abspath(sfm_path))
@@ -151,11 +188,8 @@ def subset_names(sfm_path: PathLike, n: int, obj: Optional[str] = None, seed: in
     obj = obj or object_of(sfm_path)
     entry = table_entry(obj, n)
     if entry is not None:
-        chosen: Sequence[str] = entry[scene.modality]
-        missing = sorted(set(chosen) - set(scene.names))
-        if missing:
-            raise SfmError(f"{sfm_path}: views {missing} of the precomputed subset of {obj} (N={n}) are not in it")
-    elif scene.modality == "mvs":
+        return _keep(scene, entry[scene.modality], sfm_path, f"the precomputed subset of {obj} (N={n})")
+    if scene.modality == "mvs":
         chosen = [scene.units[i].name for i in kmeans_views(centres(scene), n, seed)]
     else:
         try:

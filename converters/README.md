@@ -49,6 +49,7 @@ Every command reads **one** `sfm.json`: `--sfm .../mvs/d2/sfm.json`, or `--data 
 | :-- | :-- |
 | `--views 0:84:4` | subset of views (names, indices or slices) |
 | `--n-views N` | subset of N views, paired between MVS and MVPS (see [View subsets](#view-subsets)) |
+| `--preset front3\|360_6` | sparse-view preset of the object (see [Sparse-view presets](#sparse-view-presets)) |
 | `--no-images` | cameras and points only (needs numpy only) |
 | `--frame gt\|raw` | input world frame (default: `raw` for Meshroom, `gt` otherwise; see below) |
 | `--lighting LL` | with an MVPS `sfm.json`, `mvs` uses this LED for every pose (default: the first) |
@@ -100,6 +101,38 @@ MVPS --views pose_05,pose_31,pose_38,pose_58,pose_73
 ```
 
 `--out` writes the same lists as JSON (`mvs`, `mvps`, `distance_mm`, pair by pair).
+
+## Sparse-view presets
+
+`--preset NAME` (any command, instead of `--views` or `--n-views`) keeps a fixed set of views of the object, the same
+for everyone who reports sparse-view results on Martine:
+
+| Preset | Views |
+| :-- | :-- |
+| `front3` | 3 front-facing views: an arc at about 20° of elevation, within ±35° of azimuth |
+| `360_6` | 6 views spread as evenly as possible around the object |
+
+The MVS views are given per object (26 objects with a GT; most share the same `360_6` views, five differ), in
+[`martine_converters/view_presets.json`](martine_converters/view_presets.json). For MVPS, each MVS view is paired with
+the nearest MVPS pose, as for `--n-views`, with the distance between the paired camera centres. The MVS and MVPS
+captures are separate turntable sessions, so a pair is not always the same viewpoint: the largest distance is 72 mm
+(`surgery_scissors`, where view 077 pairs with `pose_03`). No extra and no MVS `sfm.json` are needed.
+
+```bash
+uv run martine-convert subsets --object rock --preset front3
+uv run martine-convert mvs --data $DATA --object rock --tier d4 --preset 360_6 --format neus2 --out work/rock_neus2_360_6
+```
+
+```text
+rock: preset front3 (3 front-facing views: an arc at about 20 degrees of elevation, within +-35 degrees of azimuth. MVPS: pose nearest to each view)
+  mvs      mvps       distance
+  009      pose_09        5.46 mm
+  017      pose_17        8.44 mm
+  026      pose_26       10.88 mm
+paired distance: min 5.46, median 8.44, max 10.88 mm
+MVS  --views 009,017,026
+MVPS --views pose_09,pose_17,pose_26
+```
 
 ## Conventions
 

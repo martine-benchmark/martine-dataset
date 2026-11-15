@@ -71,6 +71,9 @@ MVPS pose *k* are close viewpoints, but distinct shots with their own poses.
   `poses` of `sfm.json`, and they are absent from `gt/eval_cameras.sfm` and `gt/masks_eval/` (81 evaluation views
   for `grid`). Skip views without a pose when loading the cameras. Every other view and every MVPS pose of every
   object has a pose.
+- **Sparse-view presets**: fixed sets of 3 front-facing views (`front3`) and 6 views around the object (`360_6`) for
+  each object with a GT, with their paired MVPS poses, are in `converters/martine_converters/view_presets.json`
+  (`martine-convert --preset`, see [converters/README.md](../converters/README.md#sparse-view-presets)).
 
 ## MVPS LEDs 24 and 25
 
