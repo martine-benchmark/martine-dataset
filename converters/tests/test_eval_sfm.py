@@ -2,7 +2,7 @@
 # Copyright (c) 2026 Baptiste Brument and the Martine authors
 """Evaluation camera set of a view subset (martine-convert subsets ... --write-eval-sfm DIR): the selected views of
 gt/eval_cameras.sfm (MVS) or of the MVPS sfm.json (one view per pose) and their silhouettes, in the layout read by
-the sparse-view evaluation (DIR/eval_cameras.sfm, DIR/masks/<view stem>.png). No watertight mask is written."""
+the sparse-view evaluation (DIR/<preset>.sfm or DIR/views<N>.sfm, DIR/masks/<view stem>.png). No watertight mask is written."""
 from __future__ import annotations
 
 import hashlib
@@ -97,6 +97,13 @@ def md5(p: Path) -> str:
     return hashlib.md5(Path(p).read_bytes()).hexdigest()
 
 
+def written_sfm(out: Path) -> Path:
+    """The camera file of a --write-eval-sfm folder: the one named in its manifest."""
+    (sfm,) = Path(out).glob("*.sfm")
+    assert json.loads((Path(out) / "eval_sfm.json").read_text())["sfm"] == sfm.name
+    return sfm
+
+
 def run(root, out, *extra):
     return convert.main(["subsets", "--object", OBJ, "--data", str(root), *extra, "--write-eval-sfm", str(out)])
 
@@ -115,7 +122,7 @@ def test_mvs_eval_sfm_keeps_the_preset_views_in_source_order(data, tmp_path, pre
     out = tmp_path / "ev"
     assert run(data, out, "--preset", preset) == 0
     src = json.loads((data / OBJ / "gt" / "eval_cameras.sfm").read_text())
-    sfm = json.loads((out / "eval_cameras.sfm").read_text())
+    sfm = json.loads((written_sfm(out)).read_text())
     names = sorted(preset_entry(OBJ, preset)["mvs"])  # source order of the published views is name order
     assert [Path(v["path"]).stem for v in sfm["views"]] == names
     assert sfm["version"] == src["version"] and [i["intrinsicId"] for i in sfm["intrinsics"]] == ["11"]
@@ -127,7 +134,7 @@ def test_mvs_eval_sfm_keeps_the_preset_views_in_source_order(data, tmp_path, pre
         assert {k: x for k, x in v.items() if k != "path"} == {k: x for k, x in s.items() if k != "path"}
         assert v["path"] == f"masks/{Path(s['path']).stem}.png"
     assert sfm["poses"] == [src_poses[v["poseId"]] for v in sfm["views"]]
-    cams = eval_cameras(out / "eval_cameras.sfm")
+    cams = eval_cameras(written_sfm(out))
     assert [c[0] for c in cams] == [f"{n}.png" for n in names]
     for mask, _, _ in cams:
         assert md5(out / "masks" / mask) == md5(data / OBJ / "gt" / "masks_eval" / mask)
@@ -138,7 +145,8 @@ def test_mvs_eval_sfm_keeps_the_preset_views_in_source_order(data, tmp_path, pre
     assert m["source"] == str(data / OBJ / "gt" / "eval_cameras.sfm")
     assert m["source_md5"] == md5(data / OBJ / "gt" / "eval_cameras.sfm")
     assert m["masks_source"] == str(data / OBJ / "gt" / "masks_eval") and "watertight" not in m
-    assert sorted(os.listdir(out)) == ["eval_cameras.sfm", "eval_sfm.json", "masks"]
+    assert sorted(os.listdir(out)) == sorted([f"{preset}.sfm", "eval_sfm.json", "masks"])
+    assert m["sfm"] == f"{preset}.sfm"
 
 
 def test_mvs_watertight_masks_are_not_written(tmp_path, monkeypatch):
@@ -148,8 +156,8 @@ def test_mvs_watertight_masks_are_not_written(tmp_path, monkeypatch):
     write_eval_cameras(root, watertight=True)
     out = tmp_path / "ev"
     assert run(root, out, "--preset", "360_6") == 0
-    assert sorted(os.listdir(out)) == ["eval_cameras.sfm", "eval_sfm.json", "masks"]
-    assert len(eval_cameras(out / "eval_cameras.sfm")) == 6
+    assert sorted(os.listdir(out)) == ["360_6.sfm", "eval_sfm.json", "masks"]
+    assert len(eval_cameras(written_sfm(out))) == 6
     assert not any("watertight" in k for k in json.loads((out / "eval_sfm.json").read_text()))
 
 
@@ -163,9 +171,10 @@ def test_mvs_n_views(data, tmp_path):
     out = tmp_path / "ev"
     assert run(data, out, "--n-views", "5") == 0
     names = sorted(load_table()["objects"][OBJ]["5"]["mvs"])
-    assert [c[0] for c in eval_cameras(out / "eval_cameras.sfm")] == [f"{n}.png" for n in names]
+    assert [c[0] for c in eval_cameras(written_sfm(out))] == [f"{n}.png" for n in names]
     m = json.loads((out / "eval_sfm.json").read_text())
     assert m["n_views"] == 5 and "preset" not in m and m["views"] == names
+    assert m["sfm"] == "views5.sfm" and (out / "views5.sfm").is_file()   # the evaluation tag: @views5
 
 
 def test_mvps_eval_sfm_one_view_per_pose_despite_duplicated_pose_ids(data, tmp_path):
@@ -174,7 +183,7 @@ def test_mvps_eval_sfm_one_view_per_pose_despite_duplicated_pose_ids(data, tmp_p
     e = preset_entry(OBJ, "360_6")
     src_path = data / OBJ / "mvps" / "d2" / "sfm.json"
     src = json.loads(src_path.read_text())
-    sfm = json.loads((out / "eval_cameras.sfm").read_text())
+    sfm = json.loads((written_sfm(out)).read_text())
     folder_order = list(dict.fromkeys(v["path"].split("/")[1] for v in src["views"]))
     names = [p for p in folder_order if p in set(e["mvps"])]
     assert [Path(v["path"]).stem for v in sfm["views"]] == names and len(names) == 6
@@ -189,7 +198,7 @@ def test_mvps_eval_sfm_one_view_per_pose_despite_duplicated_pose_ids(data, tmp_p
         first.setdefault(p["poseId"], p)
     assert sfm["poses"] == [first[v["poseId"]] for v in sfm["views"]]
     assert [i["intrinsicId"] for i in sfm["intrinsics"]] == ["1"]  # the tier intrinsic only
-    cams = eval_cameras(out / "eval_cameras.sfm")
+    cams = eval_cameras(written_sfm(out))
     assert [c[0] for c in cams] == [f"{n}.png" for n in names]
     for mask, _, _ in cams:
         assert md5(out / "masks" / mask) == md5(src_path.parent / "masks" / mask)
@@ -219,7 +228,7 @@ def test_mvps_pose_without_lighting_00_takes_its_first_image(data, tmp_path):
     src_path.write_text(json.dumps(d))
     out = tmp_path / "ev"
     assert run(data, out, "--preset", "front3", "--modality", "mvps") == 0
-    sfm = json.loads((out / "eval_cameras.sfm").read_text())
+    sfm = json.loads((written_sfm(out)).read_text())
     vid = next(v["viewId"] for v in sfm["views"] if v["path"] == "masks/pose_09.png")
     assert {v["viewId"]: v["path"] for v in d["views"]}[vid] == "images/pose_09/lighting_01.exr"
 
@@ -290,7 +299,7 @@ def test_never_writes_under_the_data_root(data, capsys):
     for out in (data / "ev", data / OBJ / "gt" / "ev", data):
         assert run(data, out, "--preset", "front3") == 2
         assert "data root" in capsys.readouterr().err
-        assert not (out / "eval_cameras.sfm").exists()
+        assert not list(out.glob("*.sfm"))
     assert not (data / "ev").exists()
 
 
@@ -309,7 +318,7 @@ def test_published_vase_mvs(tmp_path, preset):
                          "--write-eval-sfm", str(out)]) == 0
     src = DATA / "vase" / "gt" / "eval_cameras.sfm"
     ref = {c[0]: c[1] for c in eval_cameras(src)}
-    cams = eval_cameras(out / "eval_cameras.sfm")
+    cams = eval_cameras(written_sfm(out))
     names = sorted(preset_entry("vase", preset)["mvs"])
     assert [c[0] for c in cams] == [f"{n}.png" for n in names]
     for mask, tr, _ in cams:
@@ -328,7 +337,7 @@ def test_published_vase_mvps(tmp_path):
     d = json.loads(src.read_text())
     poses = {p["poseId"]: p["pose"]["transform"] for p in d["poses"]}
     ref = {v["path"].split("/")[1]: poses[v["poseId"]] for v in d["views"]}
-    cams = eval_cameras(out / "eval_cameras.sfm")
+    cams = eval_cameras(written_sfm(out))
     names = [n for n in dict.fromkeys(v["path"].split("/")[1] for v in d["views"])
              if n in set(preset_entry("vase", "360_6")["mvps"])]
     assert [c[0] for c in cams] == [f"{n}.png" for n in names]
@@ -345,9 +354,9 @@ def test_published_sneakers_mvs_has_no_watertight_copy(tmp_path):
     assert convert.main(["subsets", "--object", "sneakers", "--preset", "front3", "--data", str(DATA),
                          "--write-eval-sfm", str(out)]) == 0
     assert (DATA / "sneakers" / "gt" / "masks_watertight").is_dir()
-    cams = eval_cameras(out / "eval_cameras.sfm")
+    cams = eval_cameras(written_sfm(out))
     assert [c[0] for c in cams] == ["003.png", "009.png", "072.png"]  # preset order is 072, 003, 009
-    assert sorted(os.listdir(out)) == ["eval_cameras.sfm", "eval_sfm.json", "masks"]
+    assert sorted(os.listdir(out)) == ["eval_sfm.json", "front3.sfm", "masks"]
 
 
 @pytest.mark.data
@@ -355,6 +364,6 @@ def test_published_sneakers_mvps_has_duplicated_pose_ids(tmp_path):
     out = tmp_path / "ev"
     assert convert.main(["subsets", "--object", "sneakers", "--preset", "front3", "--modality", "mvps", "--data",
                          str(DATA), "--write-eval-sfm", str(out)]) == 0
-    sfm = json.loads((out / "eval_cameras.sfm").read_text())
+    sfm = json.loads((written_sfm(out)).read_text())
     assert len(sfm["poses"]) == len(sfm["views"]) == 3 and len(sfm["intrinsics"]) == 1
     assert "watertight" not in json.loads((out / "eval_sfm.json").read_text())

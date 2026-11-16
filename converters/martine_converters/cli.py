@@ -208,7 +208,7 @@ def _eval_sfm(a, res: dict, selection: dict) -> dict:
 
         tier = a.tier if a.modality == "mvps" else None
         m = write_eval_sfm(a.data, a.object, res, a.write_eval_sfm, a.modality, tier, a.overwrite, selection)
-        print(f"wrote {a.write_eval_sfm}: {len(m['views'])} {a.modality.upper()} cameras from {m['source']} and "
+        print(f"wrote {a.write_eval_sfm / m['sfm']}: {len(m['views'])} {a.modality.upper()} cameras from {m['source']} and "
               "their silhouettes")
     return res
 
@@ -311,7 +311,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--out", type=Path, help="also write the subsets to this JSON file")
     p.add_argument("--write-eval-sfm", type=Path, metavar="DIR",
                    help="write the evaluation cameras of the subset and their silhouettes to DIR "
-                        "(eval_cameras.sfm, masks/, eval_sfm.json), for the sparse-view evaluation; needs --data")
+                        "(<preset>.sfm or views<N>.sfm, masks/, eval_sfm.json), for the sparse-view evaluation, which "
+                        "tags its outputs with that file name; needs --data")
     p.add_argument("--modality", default="mvs", choices=("mvs", "mvps"),
                    help="cameras of --write-eval-sfm: mvs (gt/eval_cameras.sfm, default) or mvps (the MVPS "
                         "sfm.json of --tier, default d2)")
