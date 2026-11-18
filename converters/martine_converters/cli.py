@@ -10,7 +10,8 @@ Subcommands (see converters/README.md):
   ps             MVPS multi-light images          -> unimsps | sdmunips | lino inputs
   mvps           PS normals (+ reflectance)       -> rnbneus2 | supernormal
   check-normals  PS normals                       -> GT-free check of their camera-axes convention
-  subsets        MVS + MVPS sfm.json              -> paired view subsets of N views (also --n-views)
+  subsets        MVS + MVPS sfm.json              -> paired view subsets of N views (also --n-views), presets
+                                                      (--write-eval-sfm: their evaluation cameras)
   list           formats and pixel-centre conventions
 
 The cameras are read from ONE AliceVision sfm.json; only the pixel-centre offset of the target method is added
@@ -30,6 +31,7 @@ from .conventions import describe
 from .export import ConversionError, Options, TriOptions, prepare_out
 from .formats import MVPS_FORMATS, MVS_FORMATS, PS_METHODS, write_mvs
 from .sfm import SfmError, _natural_key, locate_sfm, read_sfm, select_units
+from .subsets import PRESETS
 
 
 def _source(p: argparse.ArgumentParser, modality: str) -> None:
@@ -45,6 +47,9 @@ def _source(p: argparse.ArgumentParser, modality: str) -> None:
     s.add_argument("--n-views", type=int, metavar="N",
                    help="subset of N views: k-means on the MVS camera centres, MVPS poses paired to the nearest "
                         "selected MVS view (see `martine-convert subsets`)")
+    s.add_argument("--preset", choices=PRESETS,
+                   help="sparse-view preset of the object: front3 (3 front-facing views) or 360_6 (6 views around "
+                        "it); MVPS: the pose nearest to each MVS view (see `martine-convert subsets --preset`)")
     g.add_argument("--frame", choices=("gt", "raw"),
                    help="input world frame: Meshroom defaults to raw so its OBJ exports in GT; other formats default to gt")
 
@@ -82,6 +87,10 @@ def _scene(a):
         from .subsets import subset_names
 
         views = ",".join(subset_names(_locate(a), a.n_views, obj=a.object))
+    elif a.preset is not None:
+        from .subsets import preset_names
+
+        views = ",".join(preset_names(_locate(a), a.preset, obj=a.object))
     return select_units(read_sfm(_locate(a), frame=frame, masks_dir=a.masks), views)
 
 
@@ -158,6 +167,8 @@ def cmd_check_normals(a) -> dict:
 def cmd_subsets(a) -> dict:
     from . import subsets as sb
 
+    if a.write_eval_sfm and not (a.data and a.object):
+        raise SfmError("--write-eval-sfm needs --data (the published dataset) and --object")
     if a.regenerate:
         if not a.data:
             raise SfmError("--regenerate needs --data (the published dataset)")
@@ -166,8 +177,17 @@ def cmd_subsets(a) -> dict:
         a.regenerate.write_text(sb.dump_table(table))
         print(f"wrote {a.regenerate}: {len(table['objects'])} objects, N = {table['n_views']}")
         return {}
+    if a.preset:
+        if not a.object:
+            raise SfmError("give --object with --preset")
+        e = sb.preset_entry(a.object, a.preset)
+        res, source = {k: e[k] for k in ("mvs", "mvps", "distance_mm")}, "preset"
+        print(f"{a.object}: preset {a.preset} ({sb.load_presets()['presets'][a.preset]} MVPS: pose nearest to each "
+              "view)")
+        return _eval_sfm(a, _print_pairs(a, res, {"object": a.object, "preset": a.preset, "source": source}),
+                         {"preset": a.preset})
     if not (a.object and a.n_views):
-        raise SfmError("give --object and --n-views (or --regenerate)")
+        raise SfmError("give --object and --n-views or --preset (or --regenerate)")
     entry = None if a.recompute else sb.table_entry(a.object, a.n_views)
     if entry is not None:
         res, source = {k: entry[k] for k in ("mvs", "mvps", "distance_mm")}, "precomputed"
@@ -176,16 +196,32 @@ def cmd_subsets(a) -> dict:
             raise SfmError(f"{sb.no_table(a.object, a.n_views)}: give --data")
         mvs, mvps = (sb.first_sfm(a.data, a.object, m, a.tier) for m in ("mvs", "mvps"))
         res, source = sb.paired_subsets(mvs, mvps, a.n_views), "computed"
-    d = np.array(res["distance_mm"])
     print(f"{a.object}: {a.n_views} views, {source} (k-means on the MVS camera centres; MVPS pose nearest to each "
           "view)")
+    return _eval_sfm(a, _print_pairs(a, res, {"object": a.object, "n_views": a.n_views, "source": source}),
+                     {"n_views": a.n_views})
+
+
+def _eval_sfm(a, res: dict, selection: dict) -> dict:
+    if a.write_eval_sfm:
+        from .eval_sfm import write_eval_sfm
+
+        tier = a.tier if a.modality == "mvps" else None
+        m = write_eval_sfm(a.data, a.object, res, a.write_eval_sfm, a.modality, tier, a.overwrite, selection)
+        print(f"wrote {a.write_eval_sfm / m['sfm']}: {len(m['views'])} {a.modality.upper()} cameras from {m['source']} and "
+              "their silhouettes")
+    return res
+
+
+def _print_pairs(a, res: dict, extra: dict) -> dict:
+    d = np.array(res["distance_mm"])
     print(f"  {'mvs':<8} {'mvps':<10} distance")
     for s, p, x in zip(res["mvs"], res["mvps"], res["distance_mm"]):
         print(f"  {s:<8} {p:<10} {x:8.2f} mm")
     print(f"paired distance: min {d.min():.2f}, median {np.median(d):.2f}, max {d.max():.2f} mm")
-    print(f"MVS  --views {','.join(res['mvs'])}")
+    print(f"MVS  --views {','.join(sorted(res['mvs'], key=_natural_key))}")
     print(f"MVPS --views {','.join(sorted(res['mvps'], key=_natural_key))}")
-    out = {**res, "object": a.object, "n_views": a.n_views, "source": source}
+    out = {**res, **extra}
     if a.out:
         a.out.parent.mkdir(parents=True, exist_ok=True)
         a.out.write_text(json.dumps(out, indent=1) + "\n")
@@ -263,13 +299,24 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("subsets", help="paired MVS / MVPS view subsets of N views")
     p.add_argument("--object", help="object folder name, e.g. rock")
-    p.add_argument("--n-views", type=int, metavar="N")
+    g = p.add_mutually_exclusive_group()
+    g.add_argument("--n-views", type=int, metavar="N")
+    g.add_argument("--preset", choices=PRESETS, help="sparse-view preset (view_presets.json): front3 or 360_6")
     p.add_argument("--data", type=Path, help="root of the published dataset (needed to compute a subset that is not "
                                              "precomputed, and for --regenerate)")
     p.add_argument("--tier", help="tier folder read for the camera centres (default, or when a modality lacks it: "
-                                  "the first one; the subsets do not depend on it)")
+                                  "the first one; the subsets do not depend on it); with --write-eval-sfm --modality "
+                                  "mvps, the tier of the MVPS cameras (default d2)")
     p.add_argument("--recompute", action="store_true", help="compute the subset even when it is precomputed")
     p.add_argument("--out", type=Path, help="also write the subsets to this JSON file")
+    p.add_argument("--write-eval-sfm", type=Path, metavar="DIR",
+                   help="write the evaluation cameras of the subset and their silhouettes to DIR "
+                        "(<preset>.sfm or views<N>.sfm, masks/, eval_sfm.json), for the sparse-view evaluation, which "
+                        "tags its outputs with that file name; needs --data")
+    p.add_argument("--modality", default="mvs", choices=("mvs", "mvps"),
+                   help="cameras of --write-eval-sfm: mvs (gt/eval_cameras.sfm, default) or mvps (the MVPS "
+                        "sfm.json of --tier, default d2)")
+    p.add_argument("--overwrite", action="store_true", help="empty and reuse a previous --write-eval-sfm folder")
     p.add_argument("--regenerate", type=Path, metavar="FILE",
                    help="compute the subsets of every object of --data for N = 5, 10, 20, 40 and write them to FILE "
                         "(the precomputed table is martine_converters/view_subsets.json)")

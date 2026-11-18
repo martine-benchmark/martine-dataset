@@ -49,6 +49,7 @@ Every command reads **one** `sfm.json`: `--sfm .../mvs/d2/sfm.json`, or `--data 
 | :-- | :-- |
 | `--views 0:84:4` | subset of views (names, indices or slices) |
 | `--n-views N` | subset of N views, paired between MVS and MVPS (see [View subsets](#view-subsets)) |
+| `--preset front3\|360_6` | sparse-view preset of the object (see [Sparse-view presets](#sparse-view-presets)) |
 | `--no-images` | cameras and points only (needs numpy only) |
 | `--frame gt\|raw` | input world frame (default: `raw` for Meshroom, `gt` otherwise; see below) |
 | `--lighting LL` | with an MVPS `sfm.json`, `mvs` uses this LED for every pose (default: the first) |
@@ -100,6 +101,63 @@ MVPS --views pose_05,pose_31,pose_38,pose_58,pose_73
 ```
 
 `--out` writes the same lists as JSON (`mvs`, `mvps`, `distance_mm`, pair by pair).
+
+## Sparse-view presets
+
+`--preset NAME` (any command, instead of `--views` or `--n-views`) keeps a fixed set of views of the object, the same
+for everyone who reports sparse-view results on Martine:
+
+| Preset | Views |
+| :-- | :-- |
+| `front3` | 3 front-facing views: an arc at about 20° of elevation, within ±35° of azimuth |
+| `360_6` | 6 views spread as evenly as possible around the object |
+
+The MVS views are given per object (26 objects with a GT; most share the same `360_6` views, five differ), in
+[`martine_converters/view_presets.json`](martine_converters/view_presets.json). For MVPS, each MVS view is paired with
+the nearest MVPS pose, as for `--n-views`, with the distance between the paired camera centres. The MVS and MVPS
+captures are separate turntable sessions, so a pair is not always the same viewpoint: the largest distance is 72 mm
+(`surgery_scissors`, where view 077 pairs with `pose_03`). No extra and no MVS `sfm.json` are needed.
+
+```bash
+uv run martine-convert subsets --object rock --preset front3
+uv run martine-convert mvs --data $DATA --object rock --tier d4 --preset 360_6 --format neus2 --out work/rock_neus2_360_6
+```
+
+```text
+rock: preset front3 (3 front-facing views: an arc at about 20 degrees of elevation, within +-35 degrees of azimuth. MVPS: pose nearest to each view)
+  mvs      mvps       distance
+  009      pose_09        5.46 mm
+  017      pose_17        8.44 mm
+  026      pose_26       10.88 mm
+paired distance: min 5.46, median 8.44, max 10.88 mm
+MVS  --views 009,017,026
+MVPS --views pose_09,pose_17,pose_26
+```
+
+**Evaluation cameras of a preset.** `martine-convert subsets ... --data <root> --write-eval-sfm DIR` (with `--preset`
+or `--n-views`) writes the cameras of the subset and their silhouettes, for the sparse-view evaluation: after its
+usual cleanup, the evaluation filters the reconstruction and the GT point cloud a second time by visibility in those
+views. The file is named after the selection, and the evaluation tags its outputs with that name: `DIR/<preset>.sfm`
+for a preset (`front3.sfm`, outputs `@front3`), `DIR/views<N>.sfm` for `--n-views N` (`views6.sfm`, outputs
+`@views6`). It holds the selected views, their poses and intrinsics, in the raw frame and view order
+of the source (each view path is `masks/<view>.png`), `DIR/masks/` their silhouettes, and `DIR/eval_sfm.json`
+records the views, the source file and its MD5. `--modality mvs` (default) takes the views from
+`gt/eval_cameras.sfm` and `gt/masks_eval/`; `--modality mvps` takes the real MVPS cameras of `mvps/<tier>/sfm.json`
+(`--tier`, default `d2`), one per pose (`lighting_00`), with `mvps/<tier>/masks/`. No watertight mask is written:
+the usual cleanup has already applied them. `DIR` must be empty, outside the data root (`--overwrite` reuses a
+previous `DIR`).
+
+```bash
+uv run martine-convert subsets --data $DATA --object sneakers --preset front3 --write-eval-sfm work/sneakers_front3_eval
+uv run martine-convert subsets --data $DATA --object vase --preset 360_6 --modality mvps --write-eval-sfm work/vase_360_6_mvps_eval
+```
+
+The evaluation then takes the file with `--views`; its outputs go to `results_cleaned@front3/`, `Groundtruth@front3/`
+and `eval_results@front3/`:
+
+```bash
+uv run eval-pipeline -c $CFG run -o sneakers -m my_method --views work/sneakers_front3_eval/front3.sfm
+```
 
 ## Conventions
 

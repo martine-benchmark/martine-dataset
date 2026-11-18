@@ -1,0 +1,113 @@
+{
+ "description": "Sparse-view presets of the objects with a GT, in published view names. mvs: the fixed views of each object; mvps: pose nearest to each MVS view, without duplicate (scipy linear_sum_assignment on the camera centres, first tier of each modality); distance_mm: distance between the paired camera centres. The MVS and MVPS captures are separate turntable sessions, so a pair is not always the same viewpoint (largest distance: surgery_scissors). Read by --preset and martine-convert subsets --preset.",
+ "presets": {
+  "front3": "3 front-facing views: an arc at about 20 degrees of elevation, within +-35 degrees of azimuth.",
+  "360_6": "6 views spread as evenly as possible around the object."
+ },
+ "objects": {
+  "bowl": {
+   "front3": {"mvs": ["043", "052", "061"], "mvps": ["pose_43", "pose_52", "pose_61"], "distance_mm": [2.19, 2.73, 2.32]},
+   "360_6": {"mvs": ["017", "061", "077", "034", "016", "033"], "mvps": ["pose_17", "pose_61", "pose_77", "pose_34", "pose_16", "pose_33"], "distance_mm": [1.76, 2.32, 2.34, 2.09, 1.62, 1.91]}
+  },
+  "can": {
+   "front3": {"mvs": ["071", "079", "003"], "mvps": ["pose_71", "pose_79", "pose_03"], "distance_mm": [4.81, 5.31, 4.52]},
+   "360_6": {"mvs": ["017", "061", "077", "034", "016", "060"], "mvps": ["pose_17", "pose_61", "pose_77", "pose_34", "pose_16", "pose_60"], "distance_mm": [4.61, 4.68, 5.43, 4.36, 2.89, 2.62]}
+  },
+  "candle": {
+   "front3": {"mvs": ["035", "044", "054"], "mvps": ["pose_35", "pose_44", "pose_54"], "distance_mm": [7.36, 4.76, 3.05]},
+   "360_6": {"mvs": ["017", "061", "077", "034", "016", "060"], "mvps": ["pose_17", "pose_61", "pose_77", "pose_34", "pose_16", "pose_60"], "distance_mm": [11.29, 1.23, 2.24, 7.39, 7.14, 2.01]}
+  },
+  "colander": {
+   "front3": {"mvs": ["052", "061", "069"], "mvps": ["pose_52", "pose_61", "pose_69"], "distance_mm": [18.92, 18.81, 18.99]},
+   "360_6": {"mvs": ["017", "061", "077", "034", "016", "060"], "mvps": ["pose_17", "pose_61", "pose_77", "pose_34", "pose_16", "pose_60"], "distance_mm": [17.88, 18.81, 17.03, 18.29, 8.83, 10.42]}
+  },
+  "glass": {
+   "front3": {"mvs": ["020", "026", "035"], "mvps": ["pose_20", "pose_26", "pose_35"], "distance_mm": [10.09, 12.2, 14.3]},
+   "360_6": {"mvs": ["017", "061", "077", "034", "016", "060"], "mvps": ["pose_17", "pose_61", "pose_77", "pose_34", "pose_16", "pose_60"], "distance_mm": [10.54, 20.79, 23.92, 14.51, 4.31, 10.89]}
+  },
+  "grid": {
+   "front3": {"mvs": ["061", "069", "072"], "mvps": ["pose_61", "pose_69", "pose_72"], "distance_mm": [2.95, 2.71, 2.61]},
+   "360_6": {"mvs": ["017", "061", "077", "034", "016", "033"], "mvps": ["pose_17", "pose_61", "pose_77", "pose_34", "pose_16", "pose_33"], "distance_mm": [2.68, 2.95, 2.81, 2.7, 1.61, 1.66]}
+  },
+  "hammer_head": {
+   "front3": {"mvs": ["009", "017", "026"], "mvps": ["pose_09", "pose_17", "pose_26"], "distance_mm": [3.87, 4.21, 2.41]},
+   "360_6": {"mvs": ["017", "061", "077", "034", "016", "060"], "mvps": ["pose_17", "pose_61", "pose_77", "pose_34", "pose_16", "pose_60"], "distance_mm": [4.21, 35.09, 52.53, 7.53, 2.19, 14.6]}
+  },
+  "jam_pot": {
+   "front3": {"mvs": ["043", "052", "061"], "mvps": ["pose_43", "pose_52", "pose_61"], "distance_mm": [19.46, 19.71, 19.51]},
+   "360_6": {"mvs": ["017", "061", "077", "034", "016", "060"], "mvps": ["pose_17", "pose_61", "pose_77", "pose_34", "pose_16", "pose_60"], "distance_mm": [18.85, 19.51, 16.21, 19.63, 9.3, 11.01]}
+  },
+  "knife": {
+   "front3": {"mvs": ["034", "043", "052"], "mvps": ["pose_34", "pose_43", "pose_52"], "distance_mm": [6.32, 6.35, 7.02]},
+   "360_6": {"mvs": ["017", "061", "077", "034", "016", "060"], "mvps": ["pose_17", "pose_61", "pose_77", "pose_34", "pose_16", "pose_60"], "distance_mm": [6.14, 6.47, 6.11, 6.32, 3.53, 4.13]}
+  },
+  "lego": {
+   "front3": {"mvs": ["000", "009", "017"], "mvps": ["pose_00", "pose_09", "pose_17"], "distance_mm": [5.19, 4.42, 4.52]},
+   "360_6": {"mvs": ["017", "061", "077", "034", "016", "060"], "mvps": ["pose_17", "pose_61", "pose_77", "pose_34", "pose_16", "pose_60"], "distance_mm": [4.52, 3.77, 2.98, 3.12, 2.19, 2.01]}
+  },
+  "moka_pot": {
+   "front3": {"mvs": ["003", "004", "010"], "mvps": ["pose_03", "pose_04", "pose_10"], "distance_mm": [1.35, 1.41, 1.45]},
+   "360_6": {"mvs": ["017", "061", "077", "034", "016", "060"], "mvps": ["pose_17", "pose_61", "pose_77", "pose_34", "pose_16", "pose_60"], "distance_mm": [2.89, 3.62, 1.54, 3.16, 1.38, 2.41]}
+  },
+  "paw_pad": {
+   "front3": {"mvs": ["069", "072", "077"], "mvps": ["pose_69", "pose_72", "pose_77"], "distance_mm": [25.15, 24.52, 23.44]},
+   "360_6": {"mvs": ["017", "061", "077", "034", "016", "060"], "mvps": ["pose_17", "pose_61", "pose_77", "pose_34", "pose_16", "pose_60"], "distance_mm": [23.61, 24.96, 23.44, 24.76, 11.39, 14.0]}
+  },
+  "petanque_ball": {
+   "front3": {"mvs": ["043", "052", "061"], "mvps": ["pose_43", "pose_52", "pose_61"], "distance_mm": [6.73, 7.41, 7.19]},
+   "360_6": {"mvs": ["017", "061", "077", "034", "016", "060"], "mvps": ["pose_17", "pose_61", "pose_77", "pose_34", "pose_16", "pose_60"], "distance_mm": [6.94, 7.19, 6.01, 6.71, 3.58, 4.28]}
+  },
+  "plant": {
+   "front3": {"mvs": ["012", "021", "026"], "mvps": ["pose_12", "pose_21", "pose_26"], "distance_mm": [17.67, 19.73, 21.43]},
+   "360_6": {"mvs": ["017", "061", "077", "034", "016", "033"], "mvps": ["pose_17", "pose_61", "pose_77", "pose_34", "pose_16", "pose_33"], "distance_mm": [21.09, 20.64, 15.84, 22.7, 10.4, 12.28]}
+  },
+  "plate": {
+   "front3": {"mvs": ["009", "017", "026"], "mvps": ["pose_09", "pose_17", "pose_26"], "distance_mm": [17.53, 17.18, 12.46]},
+   "360_6": {"mvs": ["017", "061", "077", "034", "016", "060"], "mvps": ["pose_17", "pose_61", "pose_77", "pose_34", "pose_16", "pose_60"], "distance_mm": [17.18, 13.61, 11.35, 13.58, 8.97, 7.74]}
+  },
+  "rock": {
+   "front3": {"mvs": ["009", "017", "026"], "mvps": ["pose_09", "pose_17", "pose_26"], "distance_mm": [5.46, 8.44, 10.88]},
+   "360_6": {"mvs": ["017", "061", "077", "034", "016", "060"], "mvps": ["pose_17", "pose_61", "pose_77", "pose_34", "pose_16", "pose_60"], "distance_mm": [8.44, 20.97, 23.71, 12.99, 2.82, 9.77]}
+  },
+  "sneakers": {
+   "front3": {"mvs": ["072", "003", "009"], "mvps": ["pose_72", "pose_03", "pose_09"], "distance_mm": [4.57, 6.07, 6.11]},
+   "360_6": {"mvs": ["017", "061", "077", "034", "016", "060"], "mvps": ["pose_17", "pose_61", "pose_77", "pose_34", "pose_16", "pose_60"], "distance_mm": [5.68, 4.47, 3.49, 5.38, 3.09, 2.9]}
+  },
+  "spikes_ball": {
+   "front3": {"mvs": ["052", "061", "069"], "mvps": ["pose_52", "pose_61", "pose_69"], "distance_mm": [13.43, 13.16, 13.06]},
+   "360_6": {"mvs": ["017", "061", "077", "034", "016", "060"], "mvps": ["pose_17", "pose_61", "pose_77", "pose_34", "pose_16", "pose_60"], "distance_mm": [15.05, 13.16, 11.1, 15.92, 7.61, 7.65]}
+  },
+  "spine": {
+   "front3": {"mvs": ["069", "072", "077"], "mvps": ["pose_69", "pose_72", "pose_77"], "distance_mm": [1.24, 1.25, 1.15]},
+   "360_6": {"mvs": ["017", "061", "077", "034", "016", "033"], "mvps": ["pose_17", "pose_61", "pose_77", "pose_34", "pose_16", "pose_33"], "distance_mm": [1.23, 1.13, 1.15, 1.31, 1.16, 0.95]}
+  },
+  "straw_hat": {
+   "front3": {"mvs": ["077", "000", "009"], "mvps": ["pose_77", "pose_00", "pose_09"], "distance_mm": [4.33, 7.18, 6.42]},
+   "360_6": {"mvs": ["017", "061", "077", "034", "016", "060"], "mvps": ["pose_17", "pose_61", "pose_77", "pose_34", "pose_16", "pose_60"], "distance_mm": [7.12, 5.84, 4.33, 5.23, 3.72, 3.25]}
+  },
+  "surgery_saw": {
+   "front3": {"mvs": ["043", "056", "061"], "mvps": ["pose_43", "pose_56", "pose_61"], "distance_mm": [18.9, 14.29, 18.58]},
+   "360_6": {"mvs": ["017", "061", "077", "034", "016", "060"], "mvps": ["pose_17", "pose_61", "pose_77", "pose_34", "pose_16", "pose_60"], "distance_mm": [16.94, 18.58, 16.91, 17.93, 8.03, 10.66]}
+  },
+  "surgery_scissors": {
+   "front3": {"mvs": ["026", "034", "043"], "mvps": ["pose_26", "pose_34", "pose_43"], "distance_mm": [33.66, 43.94, 53.71]},
+   "360_6": {"mvs": ["017", "061", "034", "077", "016", "060"], "mvps": ["pose_17", "pose_61", "pose_34", "pose_03", "pose_16", "pose_60"], "distance_mm": [28.07, 72.37, 43.94, 53.71, 9.04, 35.24]}
+  },
+  "vase": {
+   "front3": {"mvs": ["072", "077", "000"], "mvps": ["pose_72", "pose_77", "pose_00"], "distance_mm": [4.16, 3.51, 3.65]},
+   "360_6": {"mvs": ["017", "061", "077", "034", "016", "047"], "mvps": ["pose_17", "pose_61", "pose_77", "pose_34", "pose_16", "pose_47"], "distance_mm": [3.94, 3.39, 3.51, 3.28, 2.3, 2.58]}
+  },
+  "warrior_head": {
+   "front3": {"mvs": ["069", "072", "003"], "mvps": ["pose_69", "pose_72", "pose_03"], "distance_mm": [2.56, 2.65, 2.88]},
+   "360_6": {"mvs": ["017", "061", "077", "034", "016", "060"], "mvps": ["pose_17", "pose_61", "pose_77", "pose_34", "pose_16", "pose_60"], "distance_mm": [3.24, 2.85, 2.55, 3.17, 1.54, 1.81]}
+  },
+  "whisk": {
+   "front3": {"mvs": ["073", "080", "001"], "mvps": ["pose_73", "pose_80", "pose_01"], "distance_mm": [4.13, 4.02, 4.11]},
+   "360_6": {"mvs": ["017", "061", "077", "034", "016", "060"], "mvps": ["pose_17", "pose_61", "pose_77", "pose_34", "pose_16", "pose_60"], "distance_mm": [4.7, 4.88, 4.4, 4.68, 2.62, 2.91]}
+  },
+  "wood": {
+   "front3": {"mvs": ["035", "044", "054"], "mvps": ["pose_35", "pose_44", "pose_54"], "distance_mm": [3.87, 4.85, 3.59]},
+   "360_6": {"mvs": ["017", "061", "077", "034", "016", "060"], "mvps": ["pose_17", "pose_61", "pose_77", "pose_34", "pose_16", "pose_60"], "distance_mm": [4.93, 4.53, 3.67, 3.74, 2.76, 2.57]}
+  }
+ }
+}
