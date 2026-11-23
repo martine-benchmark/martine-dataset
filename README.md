@@ -45,13 +45,13 @@ unmasked EXR and RAW (`.ARW`) files remain available upon request.
 - **Specular**: `bowl`, `can`, `grid`, `lego`, `moka_pot`, `petanque_ball`, `plate`, `spikes_ball`, `surgery_saw`,
   `surgery_scissors`, `whisk`
 - **Transparent**: `glass`, `jam_pot`, `lego`, `paw_pad`
-- **Textureless**: `bowl`, `candle`, `colander`, `surgery_saw`, `warrior_head`, `wood`
+- **Textureless**: `bowl`, `candle`, `colander`, `surgery_saw`, `warrior_head`
 - **Fine structure**: `candle`, `grid`, `spikes_ball`, `surgery_saw`, `surgery_scissors`, `whisk`
 - **GT by CT scan**: `bowl`, `grid`, `paw_pad`, `plant`, `spine`, `warrior_head` (+ Artec Spider); Artec Spider for the
   others; none for `coin`, `pillow`.
 
 Each property is a mask `gt/challenges/<property>.npy` over the GT points; see
-[docs/DATA_FORMAT.md](docs/DATA_FORMAT.md).
+[docs/DATA_FORMAT.md](docs/DATA_FORMAT.md). Changes between versions of the dataset: [CHANGELOG.md](CHANGELOG.md).
 </details>
 
 ## Download
