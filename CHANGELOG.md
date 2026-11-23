@@ -29,6 +29,11 @@ Effect on the evaluation: `excluded.npy` marks GT zones that are never evaluated
 with such a zone change (`candle`, `colander`, `grid`, `petanque_ball`, `sneakers`, `spikes_ball`, `straw_hat`,
 `whisk`), `grid` most of all, and so do the per-property scores of the masks above. Use eval-3d at `559e136` or later.
 
+Effect on the scores of the methods of the paper: the overall means move by at most 0.5 point of F-score at 0.5 mm;
+the fine-structure scores change strongly with the new excluded zone of `grid` (22 % → 75 % of its GT); the
+textureless scores, now without `wood`, drop by 4 to 8 points depending on the method. Detailed figures: paper and
+website.
+
 ## v2.0 (2026-11-07)
 
 - `croissant.json` added (Croissant 1.1 and RAI metadata, one `FileObject` per archive with its checksums).
