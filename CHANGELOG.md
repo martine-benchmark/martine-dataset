@@ -3,7 +3,7 @@
 Versions of the dataset on Harvard Dataverse ([doi:10.7910/DVN/2BEPEH](https://doi.org/10.7910/DVN/2BEPEH)).
 Images, image masks and cameras have not changed since v1.0.
 
-## v3.0 (unreleased)
+## v3.0 (submitted for review on 2026-11-24)
 
 Only `gt/challenges/` and one file of `gt/challenges_raw/` change; `gt.ply`, `gt_pcd.npy`, `attributes/`,
 `masks_eval/` and `eval_cameras.sfm` are the files of v2.0, byte for byte.
