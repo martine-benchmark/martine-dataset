@@ -127,6 +127,11 @@ per-property scores), as in the paper: [docs/EVALUATION.md](docs/EVALUATION.md).
 - **ColorChecker**: `calibration/color_checker/`, the chart under the MVS lighting (`mvs.png`) and under the MVPS
   lighting (`mvps.png`), developed 8-bit sRGB images.
 
+## Build the LED dome
+
+The 30-LED dome used for the MVPS acquisition can be rebuilt: 3D-printable parts, electronic components, wiring
+diagram and ESP32 firmware are in [light-dome/](light-dome/README.md).
+
 ## Related projects
 
 | Repository | Role |
