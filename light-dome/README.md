@@ -1,4 +1,4 @@
-# MARTINE light dome
+# DIY: MARTINE light dome
 
 Everything needed to rebuild the LED dome used for the **multi-light**
 acquisition regime of the MARTINE dataset: the 3D-printable structure, the
