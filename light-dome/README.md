@@ -18,7 +18,9 @@ a PC. See Section 2.2 of the paper for the full acquisition setup.
 | [3d-printable-dome/full_Dome.stl](3d-printable-dome/full_Dome.stl) | Full assembled dome, **reference only** (do not print) |
 | [led-controller/esp32_to_driver.ino](led-controller/esp32_to_driver.ino) | ESP32 firmware (Arduino sketch) |
 
-## 1. 3D-printed structure
+## 1. 3D-printed dome
+
+![Light dome](assets/light-dome.png)
 
 ### Material and finish
 
@@ -90,7 +92,7 @@ time.
 
 ### Wiring
 
-[![Wiring diagram](led-controller/martine-led-controller.png)](led-controller/martine-led-controller.pdf)
+[![Wiring diagram](assets/martine-led-controller.png)](assets/martine-led-controller.pdf)
 
 *Wiring diagram (click for the PDF version). All 32 outputs are drawn; only
 30 are used in the dome.*
